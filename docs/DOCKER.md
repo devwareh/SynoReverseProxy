@@ -63,6 +63,8 @@ You can change these ports in `docker-compose.yml` if needed.
 | `SYNOLOGY_DEVICE_NAME`         | Device identifier               | Hostname          |
 | `SYNOLOGY_SESSION_EXPIRY_SECS` | Session expiry in seconds       | `518400` (6 days) |
 
+**Note on OTP**: The `SYNOLOGY_OTP_CODE` environment variable is optional and only needed if you want to perform first login during container startup. For a better experience, especially with 2FA codes that expire quickly, use the `/auth/first-login` API endpoint instead (see [First Login Setup](#first-login-setup) below).
+
 ## Deployment Methods
 
 ### Method 1: Docker Compose (Recommended)
@@ -160,6 +162,120 @@ Both containers include health checks:
 - **Backend**: Checks `http://localhost:18888/` every 30 seconds
 - **Frontend**: Checks `http://localhost:18889/` every 30 seconds
 
+## First Login Setup
+
+After deploying the application, you need to perform an initial authentication to establish a device token. This is a **one-time setup** that allows future logins without requiring OTP codes.
+
+### Why Use the First-Login Endpoint?
+
+- **OTP codes expire quickly** (30-60 seconds), making it difficult to set them in environment variables before they expire
+- **Not all users have 2FA enabled** - the endpoint handles both scenarios gracefully
+- **No container restart needed** - you can call the endpoint after deployment
+- **Better error messages** - clear feedback on whether 2FA is required
+
+### How to Use
+
+1. **Deploy without OTP**:
+
+   - Set only the required environment variables: `SYNOLOGY_NAS_URL`, `SYNOLOGY_USERNAME`, `SYNOLOGY_PASSWORD`
+   - Do **not** set `SYNOLOGY_OTP_CODE` (or leave it empty)
+
+2. **Call the first-login endpoint** (choose the easiest method for you):
+
+   **Option 1: Using the Interactive API Docs (Easiest - Recommended)**
+
+   This is the simplest method - no command line needed!
+
+   1. Open your browser and go to: `http://your-nas-ip:18888/docs`
+   2. Scroll down to find the `/auth/first-login` endpoint
+   3. Click on it to expand, then click the **"Try it out"** button
+   4. In the request body, enter:
+      - For 2FA users: `{"otp_code": "123456"}` (replace with your current OTP)
+      - For non-2FA users: `{}` (empty JSON object)
+   5. Click the **"Execute"** button
+   6. Check the response - you should see `"success": true` if it worked
+
+   **Option 2: Using curl (Command Line)**
+
+   Only use this if you prefer command line tools:
+
+   **For users with 2FA enabled:**
+
+   ```bash
+   curl -X POST http://your-nas-ip:18888/auth/first-login \
+     -H "Content-Type: application/json" \
+     -d '{"otp_code": "123456"}'
+   ```
+
+   **For users without 2FA:**
+
+   ```bash
+   curl -X POST http://your-nas-ip:18888/auth/first-login \
+     -H "Content-Type: application/json" \
+     -d '{}'
+   ```
+
+3. **Verify success**:
+
+   - You should receive a response like:
+     ```json
+     {
+       "success": true,
+       "message": "First login successful. Device token saved.",
+       "device_token_saved": true,
+       "requires_otp": false
+     }
+     ```
+
+4. **Device token saved**:
+   - After successful first login, the device token is saved in the `data` volume
+   - Future logins will use the device token automatically
+   - No OTP needed for subsequent operations
+
+### Error Responses
+
+**2FA Required (no OTP provided):**
+
+```json
+{
+  "success": false,
+  "error": "2FA authentication required",
+  "message": "Please provide OTP code. Your account has 2FA enabled.",
+  "requires_otp": true
+}
+```
+
+**Invalid OTP:**
+
+```json
+{
+  "success": false,
+  "error": "Invalid OTP code",
+  "message": "The provided OTP code is incorrect or expired. Please generate a new OTP code and try again.",
+  "requires_otp": true
+}
+```
+
+**Invalid Credentials:**
+
+```json
+{
+  "success": false,
+  "error": "Invalid credentials",
+  "message": "Username or password is incorrect. Please check your credentials.",
+  "requires_otp": false
+}
+```
+
+### Alternative: Using Environment Variable
+
+If you prefer to set OTP via environment variable (not recommended due to expiration):
+
+1. Set `SYNOLOGY_OTP_CODE` in your `docker-compose.yml` or Portainer
+2. Deploy the stack
+3. The first login will happen automatically on startup
+4. You can remove `SYNOLOGY_OTP_CODE` after the first successful deployment
+
 ## Troubleshooting
 
 ### Containers won't start
@@ -186,7 +302,8 @@ Both containers include health checks:
 
 - Verify `SYNOLOGY_NAS_URL` is correct
 - Check username and password
-- For first login, ensure `SYNOLOGY_OTP_CODE` is set
+- For first login, use the `/auth/first-login` endpoint (see [First Login Setup](#first-login-setup)) instead of setting `SYNOLOGY_OTP_CODE`
+- If you see "No valid session or device token found", call `/auth/first-login` first
 - Check backend logs: `docker-compose logs backend`
 
 ### Frontend can't connect to backend

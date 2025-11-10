@@ -6,12 +6,13 @@ from app.core.config import get_settings
 from app.utils.encryption import save_session, load_session
 
 
-def get_new_session(device_id: Optional[str] = None) -> Dict[str, Any]:
+def get_new_session(device_id: Optional[str] = None, otp_code: Optional[str] = None) -> Dict[str, Any]:
     """
     Authenticate with Synology DSM API v6.
     
     Args:
         device_id: Optional device ID to skip OTP for subsequent logins
+        otp_code: Optional OTP code for first login (overrides settings.synology_otp_code)
         
     Returns:
         Dictionary containing sid, did, synotoken, and expiry_time
@@ -34,11 +35,16 @@ def get_new_session(device_id: Optional[str] = None) -> Dict[str, Any]:
         params["device_name"] = settings.synology_device_name
         params["device_id"] = device_id
     else:
-        # First login: use OTP if provided and enable device token
-        if settings.synology_otp_code:
-            params["otp_code"] = settings.synology_otp_code
-            params["enable_device_token"] = "yes"
-            params["device_name"] = settings.synology_device_name
+        # First login: use OTP if provided (from parameter or settings) and enable device token
+        # Prefer otp_code parameter over settings
+        effective_otp = otp_code if otp_code is not None else settings.synology_otp_code
+        
+        # Always try to enable device token on first login
+        params["enable_device_token"] = "yes"
+        params["device_name"] = settings.synology_device_name
+        
+        if effective_otp:
+            params["otp_code"] = effective_otp
     
     session = requests.Session()
     resp = session.get(login_url, params=params, verify=False)

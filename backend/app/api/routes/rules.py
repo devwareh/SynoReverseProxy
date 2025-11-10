@@ -13,6 +13,9 @@ def list_rules(mgr: SynoReverseProxyManager = Depends(get_mgr)):
     """List all reverse proxy rules."""
     try:
         return mgr.list_rules()
+    except HTTPException:
+        # Re-raise HTTPException (e.g., from get_mgr() for auth errors)
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list rules: {str(e)}")
 

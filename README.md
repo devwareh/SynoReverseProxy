@@ -188,26 +188,79 @@ docker-compose up -d --build
 
 For detailed Docker deployment instructions, see [docs/DOCKER.md](docs/DOCKER.md).
 
+For testing instructions, see [docs/TESTING.md](docs/TESTING.md).
+
 ## API Endpoints
 
+### Authentication
+- `POST /auth/first-login` - Perform first-time authentication with optional OTP (see [First Login Setup](#first-login-setup))
+
+### Rules Management
 - `GET /rules` - List all reverse proxy rules
 - `GET /rules/{rule_id}` - Get a single rule by ID
 - `POST /rules` - Create a new rule
 - `PUT /rules/{rule_id}` - Update an existing rule
 - `DELETE /rules/{rule_id}` - Delete a rule
+- `POST /rules/export` - Export all rules as JSON
+- `POST /rules/import` - Import rules from JSON
 - `POST /create` - Legacy endpoint (backward compatibility)
 
 ## Authentication Flow
 
-1. **First Login**:
+### First Login Setup
 
-   - Requires: Username + Password + OTP code
-   - Uses OTP code from environment variables
+After deploying the application (especially with Docker), you need to perform an initial authentication. This is a **one-time setup** that establishes a device token for future logins.
+
+**Recommended Method: Use the `/auth/first-login` API endpoint**
+
+This method is preferred because:
+- OTP codes expire quickly (30-60 seconds), making environment variables impractical
+- Works for both 2FA-enabled and non-2FA users
+- No container restart needed
+- Better error messages
+
+**Option 1: Using the Interactive API Docs (Easiest - Recommended)**
+
+No command line needed! Just use your browser:
+
+1. Open `http://your-nas-ip:18888/docs` in your browser
+2. Find the `/auth/first-login` endpoint
+3. Click "Try it out"
+4. Enter your OTP code (if 2FA enabled) or leave empty: `{"otp_code": "123456"}` or `{}`
+5. Click "Execute"
+6. Check the response for success
+
+**Option 2: Using curl (Command Line)**
+
+Only if you prefer command line:
+
+**For users with 2FA enabled:**
+```bash
+curl -X POST http://your-nas-ip:18888/auth/first-login \
+  -H "Content-Type: application/json" \
+  -d '{"otp_code": "123456"}'
+```
+
+**For users without 2FA:**
+```bash
+curl -X POST http://your-nas-ip:18888/auth/first-login \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+**Alternative: Environment Variable Method**
+
+You can also set `SYNOLOGY_OTP_CODE` in environment variables, but this is less convenient due to OTP expiration.
+
+### Authentication Flow Details
+
+1. **First Login**:
+   - Requires: Username + Password + OTP code (if 2FA enabled)
+   - Uses OTP code from API endpoint or environment variables
    - Enables device token (`enable_device_token=yes`)
    - Stores device ID (DID) for future logins
 
 2. **Subsequent Logins**:
-
    - Requires: Username + Password + Device ID
    - Uses stored device ID to skip OTP requirement
    - **Note**: Password is still required - device token only eliminates OTP
@@ -280,7 +333,7 @@ SynoReverseProxy/
 | `SYNOLOGY_PASSWORD` | Yes      | DSM password                    | -       |
 | `SYNOLOGY_OTP_CODE` | No\*     | 2FA OTP code (first login only) | -       |
 
-\* OTP code is only needed for the first login. After device token is obtained, it's not required. **Note**: Password is always required - device token only skips OTP, not password.
+\* OTP code is only needed for the first login. After device token is obtained, it's not required. **Note**: Password is always required - device token only skips OTP, not password. **Recommended**: Use the `/auth/first-login` API endpoint instead of setting this environment variable (see [First Login Setup](#first-login-setup)).
 | `SYNOLOGY_DEVICE_NAME` | No | Device identifier | Hostname |
 | `SYNOLOGY_SESSION_EXPIRY_SECS` | No | Session expiry in seconds | 518400 (6 days) |
 
@@ -288,9 +341,11 @@ SynoReverseProxy/
 
 ### Authentication Issues
 
-- **"Login failed"**: Check your credentials and OTP code in `config/.env`
+- **"Login failed"**: Check your credentials. If using 2FA, ensure OTP code is correct and not expired
+- **"2FA authentication required"**: Your account has 2FA enabled. Call `/auth/first-login` with an OTP code
+- **"No valid session or device token found"**: You need to call `/auth/first-login` first (see [First Login Setup](#first-login-setup))
 - **"Session expired"**: The app will automatically renew, but check network connectivity
-- **"Device token not working"**: Delete `data/syno_session.json.enc` and login again with OTP
+- **"Device token not working"**: Delete `data/syno_session.json.enc` and call `/auth/first-login` again
 
 ### API Issues
 
