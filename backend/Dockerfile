@@ -24,13 +24,17 @@ COPY app/ ./app/
 #     chown -R appuser:appuser /app
 # USER appuser
 
-# Expose port
-EXPOSE 18888
+# Backend port (can be overridden via build arg)
+ARG BACKEND_PORT=18888
+ENV BACKEND_PORT=${BACKEND_PORT}
 
-# Health check
+# Expose port
+EXPOSE ${BACKEND_PORT}
+
+# Health check (port will be set via env var at runtime)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:18888/', timeout=5)" || exit 1
+    CMD sh -c "python -c \"import requests; requests.get('http://localhost:$$BACKEND_PORT/', timeout=5)\"" || exit 1
 
 # Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "18888"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${BACKEND_PORT}"]
 

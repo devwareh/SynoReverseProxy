@@ -31,19 +31,33 @@ This guide explains how to deploy the Synology Reverse Proxy Manager using Docke
    docker-compose up -d
    ```
 
-4. **Access the application**:
-   - Frontend UI: `http://your-nas-ip:18889`
-   - Backend API: `http://your-nas-ip:18888`
-   - API Docs: `http://your-nas-ip:18888/docs`
+4. **Access the application** (using default ports):
+   - Frontend UI: `http://your-nas-ip:8889` (or custom port if `FRONTEND_PORT` is set)
+   - Backend API: `http://your-nas-ip:18888` (or custom port if `BACKEND_PORT` is set)
+   - API Docs: `http://your-nas-ip:18888/docs` (or custom port)
 
 ## Port Configuration
 
-The application uses uncommon ports to avoid conflicts with common NAS services:
+Ports are **configurable via environment variables** to avoid conflicts and accommodate different deployment scenarios:
 
-- **Backend API**: Port `18888`
-- **Frontend UI**: Port `18889`
+- **Backend API**: Default port `18888` (configurable via `BACKEND_PORT` environment variable)
+- **Frontend UI**: Default port `8889` (configurable via `FRONTEND_PORT` environment variable)
 
-You can change these ports in `docker-compose.yml` if needed.
+**Why configurable ports?**
+
+- Some systems (like Synology reverse proxy UI) may have limitations on port number input
+- Allows flexibility to use standard ports (3000, 8080, etc.) if preferred
+- Easy to change without modifying code
+
+**To change ports**, set environment variables:
+
+```bash
+export FRONTEND_PORT=3000
+export BACKEND_PORT=8000
+docker-compose up -d --build
+```
+
+Or in Portainer, add `FRONTEND_PORT` and `BACKEND_PORT` to the environment variables section.
 
 ## Environment Variables
 
@@ -62,6 +76,8 @@ You can change these ports in `docker-compose.yml` if needed.
 | `SYNOLOGY_OTP_CODE`            | 2FA OTP code (first login only) | -                 |
 | `SYNOLOGY_DEVICE_NAME`         | Device identifier               | Hostname          |
 | `SYNOLOGY_SESSION_EXPIRY_SECS` | Session expiry in seconds       | `518400` (6 days) |
+| `FRONTEND_PORT`                | Frontend web server port        | `8889`            |
+| `BACKEND_PORT`                 | Backend API server port         | `18888`           |
 
 **Note on OTP**: The `SYNOLOGY_OTP_CODE` environment variable is optional and only needed if you want to perform first login during container startup. For a better experience, especially with 2FA codes that expire quickly, use the `/auth/first-login` API endpoint instead (see [First Login Setup](#first-login-setup) below).
 
@@ -113,15 +129,17 @@ Portainer is a popular Docker management UI for NAS devices. Here's how to deplo
      - `SYNOLOGY_USERNAME`
      - `SYNOLOGY_PASSWORD`
      - `SYNOLOGY_OTP_CODE` (optional)
+     - `FRONTEND_PORT` (optional, default: 8889)
+     - `BACKEND_PORT` (optional, default: 18888)
 
 3. **Deploy the Stack**:
 
    - Click "Deploy the stack"
    - Portainer will build and start the containers
 
-4. **Access the Application**:
-   - Frontend: `http://your-nas-ip:18889`
-   - Backend: `http://your-nas-ip:18888`
+4. **Access the Application** (using default ports):
+   - Frontend: `http://your-nas-ip:8889` (or custom port if `FRONTEND_PORT` is set)
+   - Backend: `http://your-nas-ip:18888` (or custom port if `BACKEND_PORT` is set)
 
 ### Method 3: Synology Container Manager
 
@@ -152,15 +170,16 @@ These volumes persist data across container restarts.
 ## Network Configuration
 
 - Both services are on the same Docker network (`syno-network`)
-- Frontend connects to backend using service name: `http://backend:18888`
-- External access via host ports `18888` (backend) and `18889` (frontend)
+- Frontend connects to backend using service name: `http://backend:18888` (or custom `BACKEND_PORT`)
+- External access via host ports `18888` (backend, default) and `8889` (frontend, default)
+- Ports are configurable via `FRONTEND_PORT` and `BACKEND_PORT` environment variables
 
 ## Health Checks
 
 Both containers include health checks:
 
-- **Backend**: Checks `http://localhost:18888/` every 30 seconds
-- **Frontend**: Checks `http://localhost:18889/` every 30 seconds
+- **Backend**: Checks `http://localhost:18888/` (or custom `BACKEND_PORT`) every 30 seconds
+- **Frontend**: Checks `http://localhost:8889/` (or custom `FRONTEND_PORT`) every 30 seconds
 
 ## First Login Setup
 
@@ -186,7 +205,7 @@ After deploying the application, you need to perform an initial authentication t
 
    This is the simplest method - no command line needed!
 
-   1. Open your browser and go to: `http://your-nas-ip:18888/docs`
+   1. Open your browser and go to: `http://your-nas-ip:18888/docs` (or custom port if `BACKEND_PORT` is set)
    2. Scroll down to find the `/auth/first-login` endpoint
    3. Click on it to expand, then click the **"Try it out"** button
    4. In the request body, enter:
@@ -207,6 +226,8 @@ After deploying the application, you need to perform an initial authentication t
      -d '{"otp_code": "123456"}'
    ```
 
+   (Replace `18888` with your custom `BACKEND_PORT` if set)
+
    **For users without 2FA:**
 
    ```bash
@@ -214,6 +235,8 @@ After deploying the application, you need to perform an initial authentication t
      -H "Content-Type: application/json" \
      -d '{}'
    ```
+
+   (Replace `18888` with your custom `BACKEND_PORT` if set)
 
 3. **Verify success**:
 
@@ -295,7 +318,7 @@ If you prefer to set OTP via environment variable (not recommended due to expira
 
 3. **Check port conflicts**:
    ```bash
-   netstat -tuln | grep -E '18888|18889'
+   netstat -tuln | grep -E '18888|8889'  # (or your custom BACKEND_PORT|FRONTEND_PORT)
    ```
 
 ### Backend authentication errors
@@ -314,16 +337,24 @@ If you prefer to set OTP via environment variable (not recommended due to expira
 
 ### Port conflicts
 
-If ports 18888 or 18889 are already in use:
+If default ports are already in use:
 
-1. Edit `docker-compose.yml`
-2. Change port mappings:
+1. **Set environment variables** to use different ports:
+
+   ```bash
+   export FRONTEND_PORT=3000
+   export BACKEND_PORT=8000
+   docker-compose up -d --build
+   ```
+
+2. **Or in Portainer**, add `FRONTEND_PORT` and `BACKEND_PORT` to environment variables
+
+3. **Or edit `docker-compose.yml`** directly (not recommended, use env vars instead):
    ```yaml
    ports:
-     - "NEW_PORT:18888" # Backend
-     - "NEW_PORT:18889" # Frontend
+     - "NEW_PORT:NEW_PORT" # Backend (must match BACKEND_PORT)
+     - "NEW_PORT:NEW_PORT" # Frontend (must match FRONTEND_PORT)
    ```
-3. Rebuild: `docker-compose up -d --build`
 
 ### Permission errors
 

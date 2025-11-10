@@ -1,6 +1,6 @@
 server {
-    listen 8889;
-    server_name localhost;
+    listen ${NGINX_PORT};
+    server_name _;
     root /usr/share/nginx/html;
     index index.html;
 

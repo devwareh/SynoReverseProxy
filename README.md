@@ -147,10 +147,10 @@ For production deployment on your NAS, Docker is the recommended method. This pr
    docker-compose up -d --build
    ```
 
-3. **Access the application**:
-   - Frontend UI: `http://your-nas-ip:18889`
-   - Backend API: `http://your-nas-ip:18888`
-   - API Docs: `http://your-nas-ip:18888/docs`
+3. **Access the application** (using default ports):
+   - Frontend UI: `http://your-nas-ip:8889` (or custom port if `FRONTEND_PORT` is set)
+   - Backend API: `http://your-nas-ip:18888` (or custom port if `BACKEND_PORT` is set)
+   - API Docs: `http://your-nas-ip:18888/docs` (or custom port)
 
 ### Portainer Deployment
 
@@ -161,14 +161,26 @@ For production deployment on your NAS, Docker is the recommended method. This pr
    - `SYNOLOGY_USERNAME`
    - `SYNOLOGY_PASSWORD`
    - `SYNOLOGY_OTP_CODE` (optional, first login only)
+   - `FRONTEND_PORT` (optional, default: 8889)
+   - `BACKEND_PORT` (optional, default: 18888)
 4. Deploy the stack
 
 ### Port Configuration
 
-- **Backend API**: Port `18888` (uncommon port to avoid conflicts)
-- **Frontend UI**: Port `18889` (uncommon port to avoid conflicts)
+Ports are configurable via environment variables:
 
-You can change these in `docker-compose.yml` if needed.
+- **Backend API**: Default port `18888` (configurable via `BACKEND_PORT` environment variable)
+- **Frontend UI**: Default port `8889` (configurable via `FRONTEND_PORT` environment variable)
+
+**To change ports**, set environment variables before running `docker-compose`:
+
+```bash
+export FRONTEND_PORT=3000
+export BACKEND_PORT=8000
+docker-compose up -d --build
+```
+
+Or set them in Portainer's environment variables section when deploying.
 
 ### Docker Commands
 
@@ -223,7 +235,7 @@ This method is preferred because:
 
 No command line needed! Just use your browser:
 
-1. Open `http://your-nas-ip:18888/docs` in your browser
+1. Open `http://your-nas-ip:18888/docs` in your browser (or custom port if `BACKEND_PORT` is set)
 2. Find the `/auth/first-login` endpoint
 3. Click "Try it out"
 4. Enter your OTP code (if 2FA enabled) or leave empty: `{"otp_code": "123456"}` or `{}`
@@ -240,6 +252,7 @@ curl -X POST http://your-nas-ip:18888/auth/first-login \
   -H "Content-Type: application/json" \
   -d '{"otp_code": "123456"}'
 ```
+(Replace `18888` with your custom `BACKEND_PORT` if set)
 
 **For users without 2FA:**
 ```bash
@@ -247,6 +260,7 @@ curl -X POST http://your-nas-ip:18888/auth/first-login \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
+(Replace `18888` with your custom `BACKEND_PORT` if set)
 
 **Alternative: Environment Variable Method**
 

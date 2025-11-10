@@ -52,6 +52,10 @@ def get_new_session(device_id: Optional[str] = None, otp_code: Optional[str] = N
     result = resp.json()
     
     if not result.get('success'):
+        # Log the actual error for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Synology login failed. Response: {result}")
         raise Exception(f"Login failed: {result}")
     
     data = result["data"]
