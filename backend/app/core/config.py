@@ -58,9 +58,15 @@ def get_settings() -> Settings:
 DATA_DIR = PROJECT_ROOT / "data"
 LOGS_DIR = PROJECT_ROOT / "logs"
 
-# Ensure directories exist
-DATA_DIR.mkdir(exist_ok=True)
-LOGS_DIR.mkdir(exist_ok=True)
+# Ensure directories exist (handle permission errors gracefully)
+try:
+    DATA_DIR.mkdir(exist_ok=True, mode=0o755)
+    LOGS_DIR.mkdir(exist_ok=True, mode=0o755)
+except (PermissionError, OSError) as e:
+    # If we can't create directories, log warning but continue
+    # The directories might already exist or be created by Docker volume mount
+    import warnings
+    warnings.warn(f"Could not create data/logs directories: {e}. They may already exist or be mounted.")
 
 # File paths
 SESSION_FILE = str(DATA_DIR / "syno_session.json.enc")

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # Import config first to ensure .env is loaded
 from app.core import config  # noqa: F401
 
-from app.api.routes import rules, import_export
+from app.api.routes import rules, import_export, auth
 
 app = FastAPI(
     title="Synology Reverse Proxy Manager API",
@@ -24,6 +24,7 @@ app.add_middleware(
 
 # Include routers
 # Note: import_export routes must come before rules routes to match /rules/export before /rules/{rule_id}
+app.include_router(auth.router)  # Auth routes first
 app.include_router(import_export.router)
 app.include_router(rules.router)
 

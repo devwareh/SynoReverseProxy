@@ -73,6 +73,9 @@ function App() {
   const [customHeadersText, setCustomHeadersText] = useState("[]");
   const [showJsonView, setShowJsonView] = useState(false);
   const [selectedRules, setSelectedRules] = useState(new Set());
+  const [showFirstLogin, setShowFirstLogin] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [firstLoginLoading, setFirstLoginLoading] = useState(false);
   
   // Common header presets
   const headerPresets = [
@@ -94,10 +97,79 @@ function App() {
       const res = await axios.get(`${API_BASE}/rules`);
       const entries = res.data.data?.entries || [];
       setRules(entries);
+      setShowFirstLogin(false); // Hide first-login if rules load successfully
     } catch (err) {
-      setError(`Failed to load rules: ${err.response?.data?.detail || err.message}`);
+      const errorDetail = err.response?.data?.detail;
+      
+      // Properly extract error message from object or string
+      let errorMsg;
+      if (typeof errorDetail === 'object' && errorDetail !== null) {
+        // Prefer message field, then error field, then stringify the whole object
+        errorMsg = errorDetail.message || errorDetail.error || JSON.stringify(errorDetail);
+      } else if (errorDetail) {
+        errorMsg = String(errorDetail);
+      } else {
+        errorMsg = err.message || String(err);
+      }
+      
+      // Only show error message if it's not an auth error (we'll show modal instead)
+      const isAuthError = 
+        // Check status code
+        err.response?.status === 401 ||
+        // Check error detail object
+        (typeof errorDetail === 'object' && errorDetail !== null && (
+          errorDetail.requires_first_login === true ||
+          errorDetail.error === 'authentication_required'
+        )) ||
+        // Check error message strings
+        (typeof errorMsg === 'string' && (
+          errorMsg.includes("No valid session") || 
+          errorMsg.includes("device token") || 
+          errorMsg.includes("first-login") ||
+          errorMsg.includes("authentication_required")
+        ));
+      
+      if (isAuthError) {
+        // For auth errors, show a user-friendly message and the modal
+        setError("Authentication required. Please complete first-time setup.");
+        setShowFirstLogin(true);
+      } else {
+        // For other errors, show the actual error message
+        setError(`Failed to load rules: ${errorMsg}`);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFirstLogin = async () => {
+    setFirstLoginLoading(true);
+    setError(null);
+    try {
+      const payload = otpCode.trim() ? { otp_code: otpCode.trim() } : {};
+      const res = await axios.post(`${API_BASE}/auth/first-login`, payload);
+      
+      if (res.data.success) {
+        showNotification(
+          res.data.message || "First login successful! Device token saved.",
+          "success"
+        );
+        setShowFirstLogin(false);
+        setOtpCode("");
+        // Refresh rules after successful login
+        await fetchRules();
+      } else {
+        setError(res.data.message || "First login failed");
+      }
+    } catch (err) {
+      const errorDetail = err.response?.data?.detail;
+      if (errorDetail && typeof errorDetail === 'object') {
+        setError(errorDetail.message || errorDetail.error || "First login failed");
+      } else {
+        setError(errorDetail || err.message || "First login failed");
+      }
+    } finally {
+      setFirstLoginLoading(false);
     }
   };
 
@@ -464,6 +536,76 @@ function App() {
         {error && (
           <div className="notification error">
             <FiAlertCircle className="notification-icon" /> {error}
+          </div>
+        )}
+
+        {/* First Login Modal */}
+        {showFirstLogin && (
+          <div className="modal-overlay" onClick={() => setShowFirstLogin(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>
+                  <FiShield /> First-Time Setup Required
+                </h2>
+                <button
+                  className="modal-close"
+                  onClick={() => setShowFirstLogin(false)}
+                  title="Close"
+                >
+                  <FiX />
+                </button>
+              </div>
+              <div className="modal-body">
+                <p>
+                  This is your first time using the application. You need to perform an initial authentication to establish a device token.
+                </p>
+                <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#666" }}>
+                  <strong>Note:</strong> If your Synology account has 2FA enabled, you'll need to provide an OTP code. Otherwise, you can leave it empty.
+                </p>
+                <div style={{ marginTop: "1.5rem" }}>
+                  <label htmlFor="otp-code" style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>
+                    OTP Code (Optional - only if 2FA is enabled):
+                  </label>
+                  <input
+                    id="otp-code"
+                    type="text"
+                    placeholder="Enter 6-digit OTP code (or leave empty if no 2FA)"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    maxLength={6}
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem",
+                      fontSize: "1rem",
+                      border: "1px solid #ddd",
+                      borderRadius: "4px",
+                      boxSizing: "border-box"
+                    }}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter" && !firstLoginLoading) {
+                        handleFirstLogin();
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setShowFirstLogin(false)}
+                  disabled={firstLoginLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleFirstLogin}
+                  disabled={firstLoginLoading}
+                >
+                  {firstLoginLoading ? "Authenticating..." : "Authenticate"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
