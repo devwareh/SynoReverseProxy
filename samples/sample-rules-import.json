@@ -1,0 +1,103 @@
+{
+  "success": true,
+  "count": 3,
+  "exported_at": 1700000000.0,
+  "rules": [
+    {
+      "description": "Test Rule 1 - HTTP to HTTP",
+      "backend": {
+        "fqdn": "localhost",
+        "port": 5000,
+        "protocol": 0
+      },
+      "frontend": {
+        "fqdn": "test1.example.com",
+        "port": 80,
+        "protocol": 0,
+        "https": {
+          "hsts": false
+        },
+        "acl": null
+      },
+      "customize_headers": [
+        {
+          "name": "X-Forwarded-For",
+          "value": "$remote_addr"
+        },
+        {
+          "name": "X-Real-IP",
+          "value": "$remote_addr"
+        }
+      ],
+      "proxy_connect_timeout": 60,
+      "proxy_read_timeout": 60,
+      "proxy_send_timeout": 60,
+      "proxy_http_version": 1,
+      "proxy_intercept_errors": false
+    },
+    {
+      "description": "Test Rule 2 - HTTPS to HTTP with HSTS",
+      "backend": {
+        "fqdn": "192.168.1.100",
+        "port": 8080,
+        "protocol": 0
+      },
+      "frontend": {
+        "fqdn": "test2.example.com",
+        "port": 443,
+        "protocol": 1,
+        "https": {
+          "hsts": true
+        },
+        "acl": null
+      },
+      "customize_headers": [
+        {
+          "name": "X-Forwarded-Proto",
+          "value": "$scheme"
+        },
+        {
+          "name": "X-Forwarded-For",
+          "value": "$remote_addr"
+        },
+        {
+          "name": "Upgrade",
+          "value": "$http_upgrade"
+        },
+        {
+          "name": "Connection",
+          "value": "$connection_upgrade"
+        }
+      ],
+      "proxy_connect_timeout": 90,
+      "proxy_read_timeout": 120,
+      "proxy_send_timeout": 90,
+      "proxy_http_version": 1,
+      "proxy_intercept_errors": true
+    },
+    {
+      "description": "Test Rule 3 - HTTPS to HTTPS (minimal config)",
+      "backend": {
+        "fqdn": "internal.example.com",
+        "port": 8443,
+        "protocol": 1
+      },
+      "frontend": {
+        "fqdn": "test3.example.com",
+        "port": 443,
+        "protocol": 1,
+        "https": {
+          "hsts": false
+        },
+        "acl": null
+      },
+      "customize_headers": [],
+      "proxy_connect_timeout": 60,
+      "proxy_read_timeout": 60,
+      "proxy_send_timeout": 60,
+      "proxy_http_version": 1,
+      "proxy_intercept_errors": false
+    }
+  ]
+}
+
