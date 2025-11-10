@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: syno-reverse-proxy-backend
+    ports:
+      - "18888:18888"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      # Required: Synology NAS Configuration
+      - SYNOLOGY_NAS_URL=${SYNOLOGY_NAS_URL}
+      - SYNOLOGY_USERNAME=${SYNOLOGY_USERNAME}
+      - SYNOLOGY_PASSWORD=${SYNOLOGY_PASSWORD}
+      # Optional: OTP code (only needed for first login)
+      - SYNOLOGY_OTP_CODE=${SYNOLOGY_OTP_CODE:-}
+      # Optional: Device name (defaults to hostname)
+      - SYNOLOGY_DEVICE_NAME=${SYNOLOGY_DEVICE_NAME:-}
+      # Optional: Session expiry in seconds (default: 518400 = 6 days)
+      - SYNOLOGY_SESSION_EXPIRY_SECS=${SYNOLOGY_SESSION_EXPIRY_SECS:-518400}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:18888/', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - syno-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Backend API URL for frontend to connect to
+        # Leave empty to use window.location.hostname fallback (recommended)
+        # Or set to your NAS hostname:18888 for fixed URL
+        - REACT_APP_API_URL=
+    container_name: syno-reverse-proxy-frontend
+    ports:
+      - "18889:18889"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:18889/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - syno-network
+
+networks:
+  syno-network:
+    driver: bridge
+
