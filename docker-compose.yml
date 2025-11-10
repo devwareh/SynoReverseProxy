@@ -5,9 +5,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        # Backend port (default: 18888, can be changed)
+        - BACKEND_PORT=${BACKEND_PORT:-18888}
     container_name: syno-reverse-proxy-backend
     ports:
-      - "18888:18888"
+      - "${BACKEND_PORT:-18888}:${BACKEND_PORT:-18888}"
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -22,9 +25,11 @@ services:
       - SYNOLOGY_DEVICE_NAME=${SYNOLOGY_DEVICE_NAME:-}
       # Optional: Session expiry in seconds (default: 518400 = 6 days)
       - SYNOLOGY_SESSION_EXPIRY_SECS=${SYNOLOGY_SESSION_EXPIRY_SECS:-518400}
+      # Backend port (must match the port mapping above)
+      - BACKEND_PORT=${BACKEND_PORT:-18888}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:18888/', timeout=5)"]
+      test: ["CMD-SHELL", "python -c \"import requests; requests.get('http://localhost:$$BACKEND_PORT/', timeout=5)\""]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -39,16 +44,24 @@ services:
       args:
         # Backend API URL for frontend to connect to
         # Leave empty to use window.location.hostname fallback (recommended)
-        # Or set to your NAS hostname:18888 for fixed URL
+        # Or set to your NAS hostname:PORT for fixed URL
         - REACT_APP_API_URL=
+        # Backend API port (must match BACKEND_PORT)
+        # Frontend uses this to connect to backend API
+        - REACT_APP_API_PORT=${BACKEND_PORT:-18888}
+        # Frontend port (default: 8889, can be changed)
+        - NGINX_PORT=${FRONTEND_PORT:-8889}
     container_name: syno-reverse-proxy-frontend
     ports:
-      - "18889:18889"
+      - "${FRONTEND_PORT:-8889}:${FRONTEND_PORT:-8889}"
+    environment:
+      # Frontend nginx port (must match the port mapping above)
+      - NGINX_PORT=${FRONTEND_PORT:-8889}
     depends_on:
       - backend
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:18889/"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:$$NGINX_PORT/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

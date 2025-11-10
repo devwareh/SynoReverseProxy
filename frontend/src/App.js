@@ -35,7 +35,10 @@ const getApiBase = () => {
   // In Docker, backend is on same host but different port
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
-  // Use port 18888 for Docker, fallback to 8000 for local dev
+  // Use REACT_APP_API_PORT if set (from Docker build), otherwise:
+  // - localhost: use 8000 (local dev)
+  // - other hosts: use 18888 (default Docker backend port)
+  // Note: REACT_APP_API_PORT is set at build time to match BACKEND_PORT
   const port = process.env.REACT_APP_API_PORT || (hostname === 'localhost' ? '8000' : '18888');
   
   // If accessing via localhost, keep localhost (same machine)
@@ -292,8 +295,8 @@ function App() {
           backend_port: rule.backend?.port || 5000,
           frontend_fqdn: rule.frontend?.fqdn || "",
           frontend_port: rule.frontend?.port || 443,
-          backend_protocol: rule.backend?.protocol || 0,
-          frontend_protocol: rule.frontend?.protocol || 1,
+          backend_protocol: rule.backend?.protocol ?? 0,
+          frontend_protocol: rule.frontend?.protocol ?? 1,
           frontend_hsts: rule.frontend?.https?.hsts || false,
           customize_headers: headers,
           proxy_connect_timeout: rule.proxy_connect_timeout || 60,

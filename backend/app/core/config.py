@@ -28,7 +28,20 @@ class Settings:
     
     def __init__(self):
         # Synology NAS Configuration
-        self.synology_nas_url = os.getenv('SYNOLOGY_NAS_URL', 'http://YOUR_NAS_IP:5000')
+        nas_url = os.getenv('SYNOLOGY_NAS_URL', 'http://YOUR_NAS_IP:5000')
+        
+        # Validate and fix common URL format issues
+        if nas_url and not nas_url.startswith(('http://', 'https://')):
+            # Try to fix common mistake: http:IP -> http://IP
+            if nas_url.startswith('http:'):
+                nas_url = nas_url.replace('http:', 'http://', 1)
+            elif nas_url.startswith('https:'):
+                nas_url = nas_url.replace('https:', 'https://', 1)
+            else:
+                # Assume http:// if no protocol specified
+                nas_url = f"http://{nas_url}"
+        
+        self.synology_nas_url = nas_url
         self.synology_username = os.getenv('SYNOLOGY_USERNAME')
         self.synology_password = os.getenv('SYNOLOGY_PASSWORD')
         self.synology_otp_code = os.getenv('SYNOLOGY_OTP_CODE') or None
@@ -39,6 +52,12 @@ class Settings:
         if not self.synology_username or not self.synology_password:
             raise ValueError(
                 "SYNOLOGY_USERNAME and SYNOLOGY_PASSWORD must be set in environment variables or .env file"
+            )
+        
+        # Validate NAS URL format
+        if not self.synology_nas_url.startswith(('http://', 'https://')):
+            raise ValueError(
+                f"SYNOLOGY_NAS_URL must start with http:// or https://. Got: {self.synology_nas_url}"
             )
 
 
