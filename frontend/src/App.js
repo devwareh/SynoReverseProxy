@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { FiPlus, FiX, FiSearch, FiShield, FiGlobe, FiDownload, FiUpload, FiTrash2 } from "react-icons/fi";
 import useRules from "./hooks/useRules";
 import useNotifications from "./hooks/useNotifications";
-import useDebounce from "./hooks/useDebounce";
 import { authAPI } from "./utils/api";
 import { DEFAULT_RULE_FIELDS } from "./utils/constants";
 import { Header, Container, Toolbar } from "./components/layout";
@@ -42,7 +41,6 @@ function App() {
   // Local state
   const [editingRule, setEditingRule] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
   const [showForm, setShowForm] = useState(false);
   const [fields, setFields] = useState(DEFAULT_RULE_FIELDS);
   const [selectedRules, setSelectedRules] = useState(new Set());
@@ -60,15 +58,22 @@ function App() {
 
   // Filter rules based on search
   const filteredRules = useMemo(() => {
-    if (!debouncedSearchTerm) return rules;
-    const term = debouncedSearchTerm.toLowerCase();
+    // If no search term or empty, return all rules
+    if (!searchTerm || searchTerm.trim() === "") {
+      return rules;
+    }
+    
+    const term = searchTerm.toLowerCase().trim();
+    
     return rules.filter(
-      (rule) =>
-        rule.description?.toLowerCase().includes(term) ||
-        rule.frontend?.fqdn?.toLowerCase().includes(term) ||
-        rule.backend?.fqdn?.toLowerCase().includes(term)
+      (rule) => {
+        const matchesDescription = rule.description && rule.description.toLowerCase().includes(term);
+        const matchesFrontend = rule.frontend?.fqdn && rule.frontend.fqdn.toLowerCase().includes(term);
+        const matchesBackend = rule.backend?.fqdn && rule.backend.fqdn.toLowerCase().includes(term);
+        return matchesDescription || matchesFrontend || matchesBackend;
+      }
     );
-  }, [rules, debouncedSearchTerm]);
+  }, [rules, searchTerm]);
 
   // Handlers
   const handleFirstLogin = async () => {
@@ -429,10 +434,13 @@ function App() {
               <input
                 type="text"
                 placeholder="Search rules..."
-                value={searchTerm}
+                value={searchTerm || ""}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-input"
                 aria-label="Search rules"
+                autoComplete="off"
+                data-lpignore="true"
+                data-form-type="other"
               />
             </div>
           }

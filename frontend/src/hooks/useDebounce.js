@@ -10,10 +10,12 @@ function useDebounce(value, delay = 300) {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {
+    // Set up a timeout to update the debounced value
     const handler = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);
 
+    // Cleanup function to cancel the timeout if value changes before delay
     return () => {
       clearTimeout(handler);
     };
