@@ -1,0 +1,155 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: overlayFadeIn 0.2s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: var(--modal-bg);
+  border-radius: 12px;
+  box-shadow: var(--elevation-5);
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--modal-text);
+  display: flex;
+  flex-direction: column;
+  max-width: 500px;
+  width: 100%;
+  backdrop-filter: blur(10px);
+}
+
+.modal-small {
+  max-width: 400px;
+}
+
+.modal-medium {
+  max-width: 500px;
+}
+
+.modal-large {
+  max-width: 700px;
+}
+
+.modal-full {
+  max-width: 95vw;
+  max-height: 95vh;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--modal-border);
+  flex-shrink: 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-heading);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-header h2 svg {
+  color: var(--accent-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.modal-close:hover {
+  background: var(--modal-close-hover-bg);
+  color: var(--text-primary);
+}
+
+.modal-close:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.modal-body p {
+  margin: 0 0 1rem 0;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--modal-border);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    max-width: 100%;
+    margin: 0;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-overlay {
+    padding: 0;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 1rem;
+  }
+}
+

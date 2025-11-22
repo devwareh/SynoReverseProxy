@@ -1,0 +1,26 @@
+.app-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 30px;
+  padding: 20px 0;
+}
+
+.app-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  color: var(--text-heading);
+}
+
+.app-header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .app-header h1 {
+    font-size: 2rem;
+  }
+}
+

@@ -1,0 +1,100 @@
+.rule-path-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: var(--bg-form);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.rule-path {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.path-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.path-icon {
+  color: var(--accent-primary);
+  font-size: 1rem;
+}
+
+.path-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.protocol-indicator {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.frontend-path .protocol-indicator {
+  background: var(--indicator-frontend-bg);
+  color: var(--indicator-frontend-text);
+}
+
+.backend-path .protocol-indicator {
+  background: var(--indicator-backend-bg);
+  color: var(--indicator-backend-text);
+}
+
+.path-value .url {
+  font-family: "Courier New", monospace;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.path-value .port {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.rule-arrow {
+  color: var(--accent-primary);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 5px;
+}
+
+@media (max-width: 768px) {
+  .rule-path-container {
+    flex-direction: column;
+  }
+
+  .rule-arrow {
+    transform: rotate(90deg);
+  }
+}
+

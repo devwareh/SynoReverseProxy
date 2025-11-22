@@ -1,0 +1,20 @@
+.app-container {
+  max-width: 85vw;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+@media (min-width: 1600px) {
+  .app-container {
+    max-width: 1600px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 10px;
+    max-width: 100%;
+  }
+}
+

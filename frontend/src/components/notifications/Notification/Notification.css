@@ -1,0 +1,44 @@
+.notification {
+  padding: 14px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideIn 0.3s ease-out;
+  box-shadow: 0 2px 8px var(--shadow-sm);
+  font-weight: 500;
+}
+
+.notification-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.notification-message {
+  flex: 1;
+}
+
+.notification.success {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
+}
+
+.notification.error {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border: 1px solid var(--error-border);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

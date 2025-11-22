@@ -5,9 +5,17 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Dark theme colors - Aesthetic Black - main styles are in App.css */
+  background: #0a0a0a;
+  min-height: 100vh;
+  color: #e4e6eb;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+  color: #e4e6eb;
+  background: #1e1e1e;
+  padding: 2px 6px;
+  border-radius: 4px;
 }

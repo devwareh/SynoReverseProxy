@@ -1,0 +1,21 @@
+.rule-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-divider);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta-item svg {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
