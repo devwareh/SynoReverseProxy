@@ -1073,6 +1073,10 @@ function App() {
                 const backendProtocol = rule.backend?.protocol === 1 ? "HTTPS" : "HTTP";
                 const frontendPort = rule.frontend?.port || 443;
                 const backendPort = rule.backend?.port || 5000;
+                const frontendScheme = frontendProtocol.toLowerCase();
+                const frontendFqdn = rule.frontend?.fqdn;
+                const hasFrontendFqdn = Boolean(frontendFqdn);
+                const frontendHref = hasFrontendFqdn ? `${frontendScheme}://${frontendFqdn}` : null;
                 
                 const isSelected = selectedRules.has(ruleId);
                 
@@ -1138,7 +1142,7 @@ function App() {
                         <div className="path-value">
                           <span className="protocol-indicator">{frontendProtocol}</span>
                           <span className="url">
-                            {rule.frontend?.fqdn || "N/A"}
+                            {frontendFqdn || "N/A"}
                             {frontendPort && <span className="port">:{frontendPort}</span>}
                           </span>
                         </div>
@@ -1168,6 +1172,20 @@ function App() {
                         <FiCode /> {rule.customize_headers?.length || 0} Custom Header{(rule.customize_headers?.length || 0) !== 1 ? 's' : ''}
                       </span>
                     </div>
+                    {frontendHref && (
+                      <div className="rule-footer">
+                        <a
+                          href={frontendHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="domain-pill"
+                          title={`Open ${frontendScheme}://${frontendFqdn} in a new tab`}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {frontendFqdn}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
                 );

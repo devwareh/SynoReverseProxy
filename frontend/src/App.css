@@ -731,6 +731,37 @@ body {
   font-weight: 400;
 }
 
+.rule-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.domain-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: #2f3b54;
+  background: #f1f5fb;
+  border: 1px solid #d8e2f2;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.domain-pill:hover,
+.domain-pill:focus {
+  background: #e2e9f7;
+  border-color: #c1cde4;
+  color: #1f2a3d;
+  transform: translateY(-1px);
+}
+
 .rule-arrow {
   color: #667eea;
   font-size: 1.5rem;
