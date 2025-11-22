@@ -30,19 +30,23 @@ const getApiBase = () => {
     return process.env.REACT_APP_API_URL;
   }
   
-  // For development/Docker: use current window location
-  // This allows access from other devices on the network
-  // In Docker, backend is on same host but different port
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
-  // Use REACT_APP_API_PORT if set (from Docker build), otherwise:
-  // - localhost: use 8000 (local dev)
-  // - other hosts: use 18888 (default Docker backend port)
-  // Note: REACT_APP_API_PORT is set at build time to match BACKEND_PORT
-  const port = process.env.REACT_APP_API_PORT || (hostname === 'localhost' ? '8000' : '18888');
   
-  // If accessing via localhost, keep localhost (same machine)
-  // If accessing via IP, use that IP for API
+  // Detect if accessing via domain (not localhost or IP address)
+  // Domain names contain dots and are not localhost or IP pattern
+  const isDomainAccess = hostname.includes('.') && 
+                         hostname !== 'localhost' && 
+                         !/^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+  
+  if (isDomainAccess) {
+    // When accessed via domain, use relative /api path
+    // Frontend nginx will proxy these requests to the backend
+    return `${protocol}//${hostname}/api`;
+  }
+  
+  // For IP/localhost access: use IP:port (direct access)
+  const port = process.env.REACT_APP_API_PORT || (hostname === 'localhost' ? '8000' : '18888');
   return `${protocol}//${hostname === 'localhost' ? 'localhost' : hostname}:${port}`;
 };
 
