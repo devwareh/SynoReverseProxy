@@ -129,23 +129,32 @@
 
 @media (max-width: 768px) {
   .form-container {
-    padding: 20px;
+    padding: 20px 15px;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
   }
 
   .form-actions {
     flex-direction: column;
+    gap: 10px;
   }
 
   .form-actions button {
     width: 100%;
+    min-height: 48px;
   }
 
   .header-row {
     flex-direction: column;
+    gap: 10px;
+  }
+
+  .json-textarea {
+    font-size: 14px;
+    min-height: 120px;
   }
 }
 

@@ -719,15 +719,53 @@ body {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+    width: 100%;
   }
   
   .sort-controls-group {
+    width: 100%;
     justify-content: space-between;
+    padding: 10px 15px;
+    min-height: 52px;
+    box-sizing: border-box;
+  }
+  
+  .sort-label {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  
+  .sort-select-inline {
+    flex: 1;
+    min-width: 0;
+    margin: 0 10px;
+  }
+  
+  .sort-select-inline .form-select {
+    width: 100%;
+    min-width: 0;
+    font-size: 0.9rem;
+    height: 40px;
+    padding: 8px 12px;
+  }
+  
+  .sort-order-btn {
+    min-width: 40px;
+    min-height: 40px;
+    flex-shrink: 0;
   }
   
   .select-all-btn {
-    width: auto;
-    align-self: center;
+    width: 100%;
+    min-height: 52px;
+    align-self: stretch;
+    border-radius: 8px;
+    font-size: 1.3rem;
+  }
+  
+  .rules-section h2 {
+    font-size: 1.4rem;
+    margin-bottom: 15px;
   }
 }
 
@@ -1181,38 +1219,106 @@ body {
 
 @media (max-width: 768px) {
   .app-container {
-    padding: 10px;
+    padding: 8px;
     max-width: 100%;
   }
 
   .app-header h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
+    margin-bottom: 8px;
+  }
+
+  .app-header p {
+    font-size: 0.95rem;
   }
 
   .app-content {
-    padding: 20px;
+    padding: 15px;
   }
 
   .toolbar {
     flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .toolbar-left,
+  .toolbar-right {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .toolbar-left .btn,
+  .toolbar-right .btn {
+    flex: 1;
+    min-width: 0;
   }
 
   .search-box {
     max-width: 100%;
+    width: 100%;
+  }
+
+  .search-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 14px 15px 14px 45px;
+  }
+
+  .form-container {
+    padding: 20px 15px;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
   }
 
   .rules-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .rule-card {
+    padding: 15px;
   }
 
   .rule-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+    padding-left: 0;
+  }
+
+  .rule-title-section h3 {
+    font-size: 1.1rem;
+  }
+
+  .rule-path-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .domain-pill {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+
+  .rule-meta {
+    gap: 12px;
+    font-size: 0.8rem;
+  }
+
+  .btn {
+    font-size: 0.95rem;
+    padding: 14px 20px;
+    min-height: 48px; /* Better touch target */
+  }
+
+  .btn-small {
+    padding: 10px 16px;
+    min-height: 44px;
   }
 }
 

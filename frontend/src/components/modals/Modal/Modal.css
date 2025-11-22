@@ -135,21 +135,27 @@
 }
 
 @media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-start;
+    padding-top: 20px;
+  }
+
   .modal-content {
     max-width: 100%;
     margin: 0;
-    max-height: 100vh;
-    border-radius: 0;
-  }
-
-  .modal-overlay {
-    padding: 0;
+    max-height: calc(100vh - 40px);
+    border-radius: 12px 12px 0 0;
   }
 
   .modal-header,
   .modal-body,
   .modal-footer {
     padding: 1rem;
+  }
+
+  .modal-header h2 {
+    font-size: 1.3rem;
   }
 }
 

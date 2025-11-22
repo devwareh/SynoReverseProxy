@@ -88,3 +88,20 @@
   font-size: 0.85rem;
 }
 
+@media (max-width: 768px) {
+  .form-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 14px 15px;
+  }
+
+  .form-input-with-icon {
+    padding-left: 45px;
+  }
+
+  .form-select {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 14px 15px;
+    padding-right: 40px;
+  }
+}
+
