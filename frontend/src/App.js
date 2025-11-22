@@ -480,16 +480,35 @@ function App() {
       const res = await axios.post(`${API_BASE}/rules/import`, { rules: importData.rules });
       
       if (res.data.success) {
-        const { created, failed, total } = res.data;
-        if (failed > 0) {
-          showNotification(
-            `Import completed: ${created}/${total} rules created. ${failed} failed. Check console for details.`,
-            "error"
-          );
-          console.error("Import errors:", res.data.errors);
-        } else {
-          showNotification(`Successfully imported ${created} rules!`);
+        const { created, failed, skipped, total, skipped_rules } = res.data;
+        
+        // Build notification message with all counts
+        let messageParts = [];
+        if (created > 0) {
+          messageParts.push(`${created} created`);
         }
+        if (skipped > 0) {
+          messageParts.push(`${skipped} skipped`);
+        }
+        if (failed > 0) {
+          messageParts.push(`${failed} failed`);
+        }
+        
+        const message = `Import completed: ${messageParts.join(", ")} out of ${total} rules.`;
+        
+        if (failed > 0) {
+          showNotification(message, "error");
+          console.error("Import errors:", res.data.errors);
+          if (skipped > 0) {
+            console.log("Skipped rules:", res.data.skipped_rules);
+          }
+        } else if (skipped > 0) {
+          showNotification(message);
+          console.log("Skipped rules:", res.data.skipped_rules);
+        } else {
+          showNotification(message);
+        }
+        
         fetchRules();
       }
     } catch (err) {
