@@ -57,6 +57,8 @@ services:
     environment:
       # Frontend nginx port (must match the port mapping above)
       - NGINX_PORT=${FRONTEND_PORT:-8889}
+      # Backend port for nginx proxy configuration
+      - BACKEND_PORT=${BACKEND_PORT:-18888}
     depends_on:
       - backend
     restart: unless-stopped
