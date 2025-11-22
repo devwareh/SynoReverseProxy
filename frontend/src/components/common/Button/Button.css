@@ -13,6 +13,8 @@
   box-shadow: var(--elevation-1);
   position: relative;
   min-height: 44px; /* Touch target size */
+  white-space: nowrap;
+  flex-wrap: nowrap;
 }
 
 .btn:disabled {
@@ -99,7 +101,8 @@
 }
 
 .btn-text {
-  flex: 1;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .btn .spinner {

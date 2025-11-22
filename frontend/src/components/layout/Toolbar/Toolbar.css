@@ -21,7 +21,8 @@
   flex-wrap: wrap;
 }
 
-@media (max-width: 768px) {
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .toolbar {
     flex-direction: column;
     align-items: stretch;

@@ -65,7 +65,10 @@
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--text-heading);
-  word-break: break-word;
+  word-break: normal;
+  overflow-wrap: break-word;
+  white-space: normal;
+  line-height: 1.4;
 }
 
 .rule-badges {
@@ -122,7 +125,8 @@
   outline-offset: 2px;
 }
 
-@media (max-width: 768px) {
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .rule-card {
     padding: 15px;
   }

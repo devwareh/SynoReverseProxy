@@ -18,9 +18,10 @@
   color: var(--text-primary);
 }
 
-@media (max-width: 768px) {
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .app-header h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
 }
 

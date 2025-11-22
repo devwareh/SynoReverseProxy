@@ -5,15 +5,17 @@
   padding: 20px;
 }
 
+/* Large Desktop: 1600px+ */
 @media (min-width: 1600px) {
   .app-container {
     max-width: 1600px;
   }
 }
 
-@media (max-width: 768px) {
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .app-container {
-    padding: 10px;
+    padding: 8px;
     max-width: 100%;
   }
 }

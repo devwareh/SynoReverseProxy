@@ -127,7 +127,8 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
-@media (max-width: 768px) {
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .form-container {
     padding: 20px 15px;
   }

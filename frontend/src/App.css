@@ -714,7 +714,8 @@ body {
   transform: translateY(0);
 }
 
-@media (max-width: 768px) {
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .rules-header-controls {
     flex-direction: column;
     align-items: stretch;
@@ -870,18 +871,6 @@ body {
 .empty-state p {
   margin: 0;
   font-size: 1rem;
-}
-
-.rules-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
-}
-
-@media (min-width: 1200px) {
-  .rules-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
 }
 
 .rule-card {
@@ -1217,7 +1206,8 @@ body {
   font-size: 0.9rem;
 }
 
-@media (max-width: 768px) {
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .app-container {
     padding: 8px;
     max-width: 100%;
@@ -1246,12 +1236,30 @@ body {
   .toolbar-right {
     width: 100%;
     justify-content: stretch;
+    display: flex;
+    gap: 10px;
   }
 
   .toolbar-left .btn,
   .toolbar-right .btn {
     flex: 1;
     min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .toolbar-left .btn .btn-icon-wrapper,
+  .toolbar-right .btn .btn-icon-wrapper {
+    flex-shrink: 0;
+  }
+  
+  .toolbar-left .btn .btn-text,
+  .toolbar-right .btn .btn-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
   }
 
   .search-box {
@@ -1418,7 +1426,8 @@ body {
   border-top: 1px solid var(--modal-border);
 }
 
-@media (max-width: 768px) {
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .modal-content {
     max-width: 100%;
     margin: 0;

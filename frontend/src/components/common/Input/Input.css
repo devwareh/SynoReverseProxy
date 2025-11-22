@@ -88,7 +88,8 @@
   font-size: 0.85rem;
 }
 
-@media (max-width: 768px) {
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .form-input {
     font-size: 16px; /* Prevents zoom on iOS */
     padding: 14px 15px;
