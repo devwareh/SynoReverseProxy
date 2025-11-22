@@ -1,12 +1,12 @@
 // Refactored App.js using modern component architecture
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
-import { FiPlus, FiX, FiSearch, FiShield, FiGlobe, FiDownload, FiUpload, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiX, FiSearch, FiShield, FiGlobe, FiDownload, FiUpload, FiTrash2, FiArrowUp, FiArrowDown, FiLayers, FiCheckCircle } from "react-icons/fi";
 import useRules from "./hooks/useRules";
 import useNotifications from "./hooks/useNotifications";
 import { authAPI } from "./utils/api";
 import { DEFAULT_RULE_FIELDS } from "./utils/constants";
 import { Header, Container, Toolbar } from "./components/layout";
-import { Button, Input, Checkbox, SkipLink } from "./components/common";
+import { Button, Input, Checkbox, SkipLink, Select } from "./components/common";
 import { RuleGrid } from "./components/rules";
 import { ToastContainer } from "./components/notifications";
 import { EmptyState, LoadingState } from "./components/empty-states";
@@ -41,6 +41,8 @@ function App() {
   // Local state
   const [editingRule, setEditingRule] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("description"); // Options: "description", "frontend", "backend"
+  const [sortOrder, setSortOrder] = useState("asc"); // Options: "asc", "desc"
   const [showForm, setShowForm] = useState(false);
   const [fields, setFields] = useState(DEFAULT_RULE_FIELDS);
   const [selectedRules, setSelectedRules] = useState(new Set());
@@ -56,24 +58,51 @@ function App() {
     }
   }, [rulesError]);
 
-  // Filter rules based on search
+  // Filter and sort rules based on search and sort settings
   const filteredRules = useMemo(() => {
-    // If no search term or empty, return all rules
-    if (!searchTerm || searchTerm.trim() === "") {
-      return rules;
+    // Filter first
+    let filtered = rules;
+    if (searchTerm && searchTerm.trim() !== "") {
+      const term = searchTerm.toLowerCase().trim();
+      filtered = rules.filter(
+        (rule) => {
+          const matchesDescription = rule.description && rule.description.toLowerCase().includes(term);
+          const matchesFrontend = rule.frontend?.fqdn && rule.frontend.fqdn.toLowerCase().includes(term);
+          const matchesBackend = rule.backend?.fqdn && rule.backend.fqdn.toLowerCase().includes(term);
+          return matchesDescription || matchesFrontend || matchesBackend;
+        }
+      );
     }
     
-    const term = searchTerm.toLowerCase().trim();
-    
-    return rules.filter(
-      (rule) => {
-        const matchesDescription = rule.description && rule.description.toLowerCase().includes(term);
-        const matchesFrontend = rule.frontend?.fqdn && rule.frontend.fqdn.toLowerCase().includes(term);
-        const matchesBackend = rule.backend?.fqdn && rule.backend.fqdn.toLowerCase().includes(term);
-        return matchesDescription || matchesFrontend || matchesBackend;
+    // Then sort
+    const sorted = [...filtered].sort((a, b) => {
+      let aValue = "";
+      let bValue = "";
+      
+      switch (sortBy) {
+        case "description":
+          aValue = (a.description || "").toLowerCase();
+          bValue = (b.description || "").toLowerCase();
+          break;
+        case "frontend":
+          aValue = (a.frontend?.fqdn || "").toLowerCase();
+          bValue = (b.frontend?.fqdn || "").toLowerCase();
+          break;
+        case "backend":
+          aValue = (a.backend?.fqdn || "").toLowerCase();
+          bValue = (b.backend?.fqdn || "").toLowerCase();
+          break;
+        default:
+          return 0;
       }
-    );
-  }, [rules, searchTerm]);
+      
+      if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+    
+    return sorted;
+  }, [rules, searchTerm, sortBy, sortOrder]);
 
   // Handlers
   const handleFirstLogin = async () => {
@@ -467,12 +496,44 @@ function App() {
               <FiGlobe className="section-icon" /> Reverse Proxy Rules ({filteredRules.length})
             </h2>
             {filteredRules.length > 0 && (
-              <Checkbox
-                checked={selectedRules.size === filteredRules.length && filteredRules.length > 0}
-                onChange={toggleSelectAll}
-                disabled={loading}
-                label="Select All"
-              />
+              <div className="rules-header-controls">
+                <div className="sort-controls-group">
+                  <span className="sort-label">Sort by:</span>
+                  <Select
+                    id="sort-by"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    options={[
+                      { value: "description", label: "Name" },
+                      { value: "frontend", label: "Frontend Domain" },
+                      { value: "backend", label: "Backend Domain" },
+                    ]}
+                    className="sort-select-inline"
+                  />
+                  <Button
+                    variant="secondary"
+                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                    ariaLabel={`Sort ${sortOrder === "asc" ? "descending" : "ascending"}`}
+                    className="sort-order-btn"
+                  >
+                    {sortOrder === "asc" ? <FiArrowUp /> : <FiArrowDown />}
+                  </Button>
+                </div>
+                <Button
+                  variant={selectedRules.size === filteredRules.length && filteredRules.length > 0 ? "primary" : "secondary"}
+                  onClick={toggleSelectAll}
+                  disabled={loading}
+                  ariaLabel={selectedRules.size === filteredRules.length ? "Deselect all rules" : "Select all rules"}
+                  title={selectedRules.size === filteredRules.length ? "Deselect all" : "Select all"}
+                  className="select-all-btn"
+                >
+                  {selectedRules.size === filteredRules.length && filteredRules.length > 0 ? (
+                    <FiCheckCircle />
+                  ) : (
+                    <FiLayers />
+                  )}
+                </Button>
+              </div>
             )}
           </div>
           {loading && !showForm ? (
