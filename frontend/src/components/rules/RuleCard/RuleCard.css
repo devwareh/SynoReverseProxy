@@ -111,6 +111,16 @@
   align-items: center; /* Center align buttons with title */
 }
 
+/* Make action buttons square in desktop/tablet view to match mobile */
+.rule-actions .btn-icon {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .rule-body {
   display: flex;
   flex-direction: column;
