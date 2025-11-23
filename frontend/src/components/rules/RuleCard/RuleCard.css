@@ -10,6 +10,9 @@
   gap: 15px;
   box-shadow: var(--elevation-1);
   animation: cardFadeIn 0.4s ease-out;
+  /* Enable container queries for responsive font sizing based on card width */
+  container-type: inline-size;
+  container-name: rule-card;
 }
 
 @keyframes cardFadeIn {
@@ -43,33 +46,46 @@
 
 .rule-checkbox {
   position: absolute;
-  top: 15px;
-  left: 15px;
+  /* Align checkbox center with title text center */
+  /* Title font-size: clamp(0.95rem, 0.9rem + 0.5vw, 1.25rem) */
+  /* Position checkbox to align with title's visual center */
+  top: calc(20px + (clamp(0.95rem, 0.9rem + 0.5vw, 1.25rem) * 1.4 - 20px) / 2);
+  left: 20px; /* Match card padding */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .rule-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 15px;
-  padding-left: 35px;
+  align-items: center; /* Center align all header elements */
+  gap: 16px; /* Modern 8px grid spacing */
+  padding-left: 40px; /* Space for checkbox (20px padding + 20px checkbox) */
+  min-height: calc(clamp(0.95rem, 0.9rem + 0.5vw, 1.25rem) * 1.4 + 8px); /* Title line-height + badge space */
 }
 
 .rule-title-section {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Consistent spacing between title and badges */
 }
 
 .rule-title-section h3 {
-  margin: 0 0 8px 0;
-  /* Fluid rule title: scales from 1.1rem (mobile) to 1.25rem (desktop) */
-  font-size: clamp(1.1rem, 1.05rem + 0.4vw, 1.25rem);
+  margin: 0;
+  /* Fluid rule title: scales smoothly based on viewport and card size */
+  /* Scales from 0.95rem (very small cards) to 1.25rem (large cards) */
+  font-size: clamp(0.95rem, 0.9rem + 0.5vw, 1.25rem);
   font-weight: 600;
   color: var(--text-heading);
   word-break: normal;
   overflow-wrap: break-word;
   white-space: normal;
   line-height: 1.4;
+  /* Ensure title aligns properly with checkbox and buttons */
+  display: block;
 }
 
 .rule-badges {
@@ -78,10 +94,21 @@
   flex-wrap: wrap;
 }
 
+/* Adaptive badge font sizes within rule cards */
+.rule-badges .badge {
+  /* Adaptive font size: scales from 0.7rem (small cards) to 0.75rem (large cards) */
+  font-size: clamp(0.7rem, 0.65rem + 0.1vw, 0.75rem);
+}
+
+.rule-badges .badge-small {
+  font-size: clamp(0.65rem, 0.6rem + 0.08vw, 0.7rem);
+}
+
 .rule-actions {
   display: flex;
-  gap: 4px;
+  gap: 4px; /* Tight spacing for icon buttons */
   flex-shrink: 0;
+  align-items: center; /* Center align buttons with title */
 }
 
 .rule-body {
@@ -104,7 +131,8 @@
   align-items: center;
   padding: 6px 12px;
   border-radius: 8px;
-  font-size: 0.82rem;
+  /* Adaptive font size: scales from 0.75rem (small cards) to 0.82rem (large cards) */
+  font-size: clamp(0.75rem, 0.7rem + 0.15vw, 0.82rem);
   font-weight: 500;
   text-decoration: none;
   color: var(--pill-text);
@@ -126,6 +154,22 @@
   outline-offset: 2px;
 }
 
+/* Small cards (when 3+ cards per row) - approximately 280px-350px card width */
+@media (min-width: 1024px) and (max-width: 1400px) {
+  .rule-title-section h3 {
+    /* Smaller font for narrower cards */
+    font-size: clamp(0.95rem, 0.9rem + 0.3vw, 1.1rem);
+  }
+  
+  .domain-pill {
+    font-size: clamp(0.72rem, 0.7rem + 0.1vw, 0.78rem);
+  }
+  
+  .rule-path-container {
+    padding: 12px;
+  }
+}
+
 /* Mobile & Tablet: up to 1023px */
 @media (max-width: 1023px) {
   .rule-card {
@@ -136,18 +180,35 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
-    padding-left: 0;
+    padding-left: 0; /* Reset padding, handle spacing in title-section */
+    min-height: auto;
+    width: 100%;
   }
 
   .rule-checkbox {
-    position: relative;
-    top: 0;
-    left: 0;
+    position: absolute; /* Keep absolute positioning */
+    /* Align with title center: 15px padding + (1.1rem * 1.4 / 2) - 10px */
+    top: calc(15px + (1.1rem * 1.4 / 2) - 10px);
+    left: 15px; /* Match card padding */
+    z-index: 1; /* Ensure checkbox is above other content */
   }
-
+  
+  .rule-title-section {
+    gap: 8px;
+    width: 100%;
+    padding-left: 45px; /* Space for checkbox: 15px (card padding) + 20px (checkbox) + 10px (safe gap) */
+    box-sizing: border-box;
+  }
+  
   .rule-title-section h3 {
-    font-size: 1.1rem;
+    margin: 0;
+    padding: 0;
+    /* Adaptive font size for mobile */
+    font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.1rem);
     line-height: 1.4;
+    /* Ensure text wraps properly on small screens */
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   .rule-actions {
@@ -163,17 +224,36 @@
   }
 
   .domain-pill {
-    font-size: 0.8rem;
+    /* Adaptive font size for mobile */
+    font-size: clamp(0.7rem, 0.68rem + 0.15vw, 0.8rem);
     padding: 6px 12px;
   }
 
   .rule-path-container {
     padding: 12px;
+    /* Ensure no horizontal overflow */
+    overflow-x: hidden;
+    min-width: 0;
   }
 
   .rule-meta {
     gap: 12px;
-    font-size: 0.8rem;
+    /* Adaptive font size for mobile */
+    font-size: clamp(0.75rem, 0.72rem + 0.1vw, 0.8rem);
+    /* Ensure meta items wrap properly */
+    flex-wrap: wrap;
+  }
+  
+  /* Ensure card doesn't overflow on very small screens */
+  .rule-card {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+  
+  /* Ensure action buttons don't overflow */
+  .rule-actions {
+    flex-wrap: wrap;
+    min-width: 0;
   }
 }
 

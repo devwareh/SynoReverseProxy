@@ -21,16 +21,35 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
+  /* Adaptive font size based on card width using container queries */
+  /* Scales from 0.7rem (280px cards) to 0.85rem (400px+ cards) */
+  font-size: clamp(0.7rem, 0.65rem + 0.5cqw, 0.85rem);
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  min-height: 24px; /* Consistent height */
+  line-height: 1.5;
+}
+
+/* Fallback for browsers without container query support */
+@supports not (container-type: inline-size) {
+  .path-header {
+    font-size: clamp(0.75rem, 0.7rem + 0.2vw, 0.85rem);
+  }
 }
 
 .path-icon {
   color: var(--accent-primary);
-  font-size: 1rem;
+  /* Adaptive icon size based on card width */
+  font-size: clamp(0.85rem, 0.8rem + 0.5cqw, 1rem);
+}
+
+/* Fallback for browsers without container query support */
+@supports not (container-type: inline-size) {
+  .path-icon {
+    font-size: 1rem;
+  }
 }
 
 .path-value {
@@ -41,15 +60,26 @@
   min-width: 0;
   width: 100%;
   overflow: hidden;
+  min-height: 24px; /* Match header height */
+  line-height: 1.5;
 }
 
 .protocol-indicator {
   padding: 3px 8px;
   border-radius: 4px;
-  font-size: 0.7rem;
+  /* Adaptive font size based on card width using container queries */
+  /* Scales from 0.6rem (280px cards) to 0.7rem (400px+ cards) */
+  font-size: clamp(0.6rem, 0.55rem + 0.4cqw, 0.7rem);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* Fallback for browsers without container query support */
+@supports not (container-type: inline-size) {
+  .protocol-indicator {
+    font-size: clamp(0.65rem, 0.62rem + 0.1vw, 0.7rem);
+  }
 }
 
 .frontend-path .protocol-indicator {
@@ -65,13 +95,22 @@
 .path-value .url {
   font-family: "Courier New", monospace;
   color: var(--text-primary);
-  font-size: 0.95rem;
+  /* Adaptive font size based on card width using container queries */
+  /* Scales from 0.8rem (280px cards) to 0.95rem (400px+ cards) */
+  font-size: clamp(0.8rem, 0.75rem + 0.5cqw, 0.95rem);
   font-weight: 500;
   word-break: break-word;
   overflow-wrap: break-word;
   max-width: 100%;
   min-width: 0;
   flex: 1 1 auto;
+}
+
+/* Fallback for browsers without container query support */
+@supports not (container-type: inline-size) {
+  .path-value .url {
+    font-size: clamp(0.85rem, 0.8rem + 0.2vw, 0.95rem);
+  }
 }
 
 .path-value .port {
@@ -81,20 +120,84 @@
 
 .rule-arrow {
   color: var(--accent-primary);
-  font-size: 1.5rem;
+  /* Adaptive arrow size based on card width */
+  font-size: clamp(1.2rem, 1.1rem + 1cqw, 1.5rem);
   display: flex;
   align-items: center;
   flex-shrink: 0;
   padding: 0 5px;
 }
 
-@media (max-width: 768px) {
+/* Fallback for browsers without container query support */
+@supports not (container-type: inline-size) {
+  .rule-arrow {
+    font-size: 1.5rem;
+  }
+}
+
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .rule-path-container {
     flex-direction: column;
+    padding: 12px; /* Reduced padding for mobile */
+  }
+  
+  .rule-path {
+    min-width: 0; /* Allow paths to shrink on mobile */
+    width: 100%;
   }
 
   .rule-arrow {
     transform: rotate(90deg);
+  }
+  
+  .path-value {
+    /* Ensure proper wrapping on very small screens */
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+  
+  .path-value .url {
+    /* Better text wrapping for long URLs on mobile */
+    /* Use container queries if supported, otherwise fallback to viewport */
+    font-size: clamp(0.8rem, 0.75rem + 0.5cqw, 0.85rem);
+    word-break: break-all; /* Break long URLs aggressively on mobile */
+  }
+  
+  @supports not (container-type: inline-size) {
+    .path-value .url {
+      font-size: clamp(0.8rem, 0.75rem + 0.15vw, 0.85rem);
+    }
+  }
+  
+  .path-header {
+    font-size: clamp(0.7rem, 0.65rem + 0.5cqw, 0.8rem);
+  }
+  
+  @supports not (container-type: inline-size) {
+    .path-header {
+      font-size: clamp(0.7rem, 0.68rem + 0.1vw, 0.8rem);
+    }
+  }
+  
+  .protocol-indicator {
+    font-size: clamp(0.6rem, 0.55rem + 0.4cqw, 0.65rem);
+  }
+  
+  @supports not (container-type: inline-size) {
+    .protocol-indicator {
+      font-size: clamp(0.6rem, 0.58rem + 0.08vw, 0.65rem);
+    }
+  }
+  
+  .path-icon {
+    font-size: clamp(0.85rem, 0.8rem + 0.5cqw, 0.95rem);
+  }
+  
+  @supports not (container-type: inline-size) {
+    .path-icon {
+      font-size: 0.9rem;
+    }
   }
 }
 

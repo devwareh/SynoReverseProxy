@@ -712,13 +712,13 @@ body {
     width: 100%;
     min-width: 0;
     font-size: 0.9rem;
-    height: 40px;
-    padding: 8px 12px;
+    height: 44px; /* Better touch target */
+    padding: 10px 12px;
   }
   
   .sort-order-btn {
-    min-width: 40px;
-    min-height: 40px;
+    min-width: 44px; /* Better touch target */
+    min-height: 44px;
     flex-shrink: 0;
   }
   
@@ -730,8 +730,8 @@ body {
     font-size: 1.3rem;
   }
   
+  /* Rules section h2 now uses clamp() - no override needed */
   .rules-section h2 {
-    font-size: 1.4rem;
     margin-bottom: 15px;
   }
 }
@@ -835,6 +835,14 @@ body {
   gap: 15px;
 }
 
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
+  .loading,
+  .empty-state {
+    padding: 40px 20px; /* Reduced padding for mobile */
+  }
+}
+
 .empty-state p {
   margin: 0;
   font-size: 1rem;
@@ -899,92 +907,8 @@ body {
   gap: 15px;
 }
 
-.rule-path-container {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 15px;
-  background: var(--bg-form);
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-  min-width: 0;
-}
-
-.rule-path {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.path-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-
-.path-icon {
-  color: var(--accent-primary);
-  font-size: 1rem;
-}
-
-.path-header .label {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.path-value {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  min-width: 0;
-  width: 100%;
-  overflow: hidden;
-}
-
-.protocol-indicator {
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.frontend-path .protocol-indicator {
-  background: var(--indicator-frontend-bg);
-  color: var(--indicator-frontend-text);
-}
-
-.backend-path .protocol-indicator {
-  background: var(--indicator-backend-bg);
-  color: var(--indicator-backend-text);
-}
-
-.path-value .url {
-  font-family: "Courier New", monospace;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-  font-weight: 500;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  max-width: 100%;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.path-value .port {
-  color: var(--text-muted);
-  font-weight: 400;
-}
+/* RulePath styles moved to components/rules/RulePath/RulePath.css */
+/* These styles are now handled by the component CSS with container queries */
 
 .rule-footer {
   margin-top: 12px;
@@ -1017,15 +941,8 @@ body {
   transform: translateY(-1px);
 }
 
-.rule-arrow {
-  color: var(--accent-primary);
-  /* Fluid arrow icon: scales from 1.25rem (mobile) to 1.5rem (desktop) */
-  font-size: clamp(1.25rem, 1.2rem + 0.6vw, 1.5rem);
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  padding: 0 5px;
-}
+/* Rule arrow styles moved to components/rules/RulePath/RulePath.css */
+/* Now uses container queries for adaptive sizing based on card width */
 
 .rule-meta {
   display: flex;
@@ -1055,17 +972,10 @@ body {
     max-width: 100%;
   }
 
-  .app-header h1 {
-    font-size: 1.75rem;
-    margin-bottom: 8px;
-  }
-
-  .app-header p {
-    font-size: 0.95rem;
-  }
+  /* Header font sizes now use clamp() - no override needed */
 
   .app-content {
-    padding: 15px;
+    padding: 12px;
   }
 
   .toolbar {
@@ -1115,7 +1025,7 @@ body {
   }
 
   .form-container {
-    padding: 20px 15px;
+    padding: 16px 12px;
   }
 
   .form-grid {
@@ -1137,21 +1047,16 @@ body {
     font-size: 1.1rem;
   }
 
-  .rule-path-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px;
-  }
+  /* RulePath container mobile styles moved to components/rules/RulePath/RulePath.css */
 
   .domain-pill {
-    font-size: 0.8rem;
+    font-size: 0.85rem; /* Improved readability */
     padding: 6px 12px;
   }
 
   .rule-meta {
     gap: 12px;
-    font-size: 0.8rem;
+    font-size: 0.85rem; /* Improved readability */
   }
 
   .btn {
@@ -1166,116 +1071,7 @@ body {
   }
 }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--modal-overlay);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-content {
-  background: var(--modal-bg);
-  border-radius: 12px;
-  box-shadow: 0 10px 40px var(--shadow-lg);
-  max-width: 500px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: modalSlideIn 0.3s ease-out;
-  color: var(--modal-text);
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--modal-border);
-}
-
-.modal-header h2 {
-  margin: 0;
-  /* Fluid modal heading: scales from 1.25rem (mobile) to 1.5rem (desktop) */
-  font-size: clamp(1.25rem, 1.2rem + 0.6vw, 1.5rem);
-  color: var(--text-heading);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.modal-header h2 svg {
-  color: var(--accent-primary);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background: var(--modal-close-hover-bg);
-  color: var(--text-primary);
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.modal-body p {
-  margin: 0 0 1rem 0;
-  line-height: 1.6;
-  color: var(--text-secondary);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  border-top: 1px solid var(--modal-border);
-}
-
-/* Mobile & Tablet: up to 1023px */
-@media (max-width: 1023px) {
-  .modal-content {
-    max-width: 100%;
-    margin: 0;
-  }
-  
-  .modal-header,
-  .modal-body,
-  .modal-footer {
-    padding: 1rem;
-  }
-}
+/* Modal styles moved to components/modals/Modal/Modal.css */
 
 /* Additional styles for App.js - moved from inline styles */
 .modal-note-text {

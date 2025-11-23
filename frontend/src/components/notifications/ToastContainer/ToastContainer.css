@@ -30,7 +30,8 @@
   pointer-events: auto;
 }
 
-@media (max-width: 768px) {
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .toast-container {
     left: 0;
     right: 0;

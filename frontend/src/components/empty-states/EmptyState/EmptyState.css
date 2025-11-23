@@ -33,7 +33,8 @@
   margin-top: 10px;
 }
 
-@media (max-width: 768px) {
+/* Mobile & Tablet: up to 1023px */
+@media (max-width: 1023px) {
   .empty-state {
     padding: 40px 20px;
   }

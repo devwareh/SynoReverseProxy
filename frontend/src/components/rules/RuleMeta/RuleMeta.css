@@ -4,7 +4,8 @@
   gap: 15px;
   padding-top: 10px;
   border-top: 1px solid var(--border-divider);
-  font-size: 0.85rem;
+  /* Adaptive font size: scales from 0.75rem (small cards) to 0.85rem (large cards) */
+  font-size: clamp(0.75rem, 0.7rem + 0.2vw, 0.85rem);
   color: var(--text-secondary);
 }
 
@@ -16,6 +17,7 @@
 
 .meta-item svg {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  /* Adaptive icon size: scales from 0.8rem (small cards) to 0.9rem (large cards) */
+  font-size: clamp(0.8rem, 0.75rem + 0.2vw, 0.9rem);
 }
 

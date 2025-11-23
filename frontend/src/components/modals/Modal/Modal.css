@@ -76,7 +76,8 @@
 
 .modal-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  /* Fluid modal heading: scales from 1.25rem (mobile) to 1.5rem (desktop) */
+  font-size: clamp(1.25rem, 1.2rem + 0.6vw, 1.5rem);
   color: var(--text-heading);
   display: flex;
   align-items: center;
@@ -137,9 +138,9 @@
 /* Mobile & Tablet: up to 1023px */
 @media (max-width: 1023px) {
   .modal-overlay {
-    padding: 10px;
+    padding: 8px;
     align-items: flex-start;
-    padding-top: 20px;
+    padding-top: 16px;
   }
 
   .modal-content {
@@ -155,8 +156,6 @@
     padding: 1rem;
   }
 
-  .modal-header h2 {
-    font-size: 1.3rem;
-  }
+  /* Modal header h2 now uses clamp() - no override needed */
 }
 

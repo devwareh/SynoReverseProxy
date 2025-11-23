@@ -130,7 +130,7 @@
 /* Mobile & Tablet: up to 1023px */
 @media (max-width: 1023px) {
   .form-container {
-    padding: 20px 15px;
+    padding: 16px 12px;
   }
 
   .form-grid {
