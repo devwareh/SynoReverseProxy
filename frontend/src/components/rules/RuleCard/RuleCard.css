@@ -62,7 +62,8 @@
 
 .rule-title-section h3 {
   margin: 0 0 8px 0;
-  font-size: 1.25rem;
+  /* Fluid rule title: scales from 1.1rem (mobile) to 1.25rem (desktop) */
+  font-size: clamp(1.1rem, 1.05rem + 0.4vw, 1.25rem);
   font-weight: 600;
   color: var(--text-heading);
   word-break: normal;

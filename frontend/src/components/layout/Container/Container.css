@@ -15,7 +15,7 @@
 /* Mobile & Tablet: up to 1023px */
 @media (max-width: 1023px) {
   .app-container {
-    padding: 8px;
+    padding: 0;
     max-width: 100%;
   }
 }

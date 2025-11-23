@@ -115,6 +115,11 @@
   padding: 0;
 }
 
+html {
+  /* Fluid base font size: scales from 14px (mobile) to 16px (desktop) */
+  font-size: clamp(14px, 0.875rem + 0.5vw, 16px);
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
     "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
@@ -125,6 +130,8 @@ body {
   min-height: 100vh;
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
+  /* Base font size inherits from html */
+  font-size: 1rem;
 }
 
 /* Icon Styles */
@@ -145,36 +152,8 @@ body {
   margin-bottom: 15px;
 }
 
-.app-container {
-  max-width: 85vw;
-  width: 100%;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-@media (min-width: 1600px) {
-  .app-container {
-    max-width: 1600px;
-  }
-}
-
-.app-header {
-  text-align: center;
-  color: white;
-  margin-bottom: 30px;
-  padding: 20px 0;
-}
-
-.app-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 10px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.app-header p {
-  font-size: 1.1rem;
-  opacity: 0.9;
-}
+/* .app-container styles moved to components/layout/Container/Container.css */
+/* .app-header styles moved to components/layout/Header/Header.css */
 
 .app-content {
   background: var(--bg-card);
@@ -219,21 +198,7 @@ body {
   }
 }
 
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.toolbar-left {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
+/* .toolbar styles moved to components/layout/Toolbar/Toolbar.css */
 
 .selection-count {
   display: inline-flex;
@@ -540,7 +505,8 @@ body {
 .form-section h3 {
   margin-bottom: 20px;
   color: var(--text-heading);
-  font-size: 1.3rem;
+  /* Fluid section heading: scales from 1.1rem (mobile) to 1.3rem (desktop) */
+  font-size: clamp(1.1rem, 1.05rem + 0.5vw, 1.3rem);
   font-weight: 600;
   padding-bottom: 12px;
   border-bottom: 2px solid var(--border-color);
@@ -775,7 +741,8 @@ body {
   color: var(--text-heading);
   display: flex;
   align-items: center;
-  font-size: 1.8rem;
+  /* Fluid section heading: scales from 1.4rem (mobile) to 1.8rem (desktop) */
+  font-size: clamp(1.4rem, 1.3rem + 1vw, 1.8rem);
   font-weight: 600;
 }
 
@@ -873,133 +840,7 @@ body {
   font-size: 1rem;
 }
 
-.rule-card {
-  background: var(--bg-card);
-  border: 2px solid var(--border-color);
-  border-radius: 12px;
-  padding: 24px;
-  transition: all 0.3s;
-  box-shadow: 0 2px 8px var(--shadow-sm);
-  position: relative;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--text-primary);
-}
-
-.rule-card:hover {
-  border-color: var(--accent-primary);
-  box-shadow: 0 8px 24px var(--shadow-lg);
-  transform: translateY(-4px);
-}
-
-.rule-card.selected {
-  border-color: var(--accent-primary);
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
-  box-shadow: 0 4px 16px var(--shadow-accent);
-}
-
-.rule-checkbox {
-  position: absolute;
-  top: 24px;
-  left: 16px;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-}
-
-.rule-checkbox input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
-  min-height: 20px;
-  cursor: pointer;
-  border: 2px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--bg-input);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  margin: 0;
-  flex-shrink: 0;
-  position: relative;
-  /* Center checkbox with text: h3 font-size 1.3rem (20.8px) * line-height 1.5 = 31.2px line height
-     Checkbox center should align with text center, so offset by (31.2px - 20px) / 2 = 5.6px */
-  margin-top: 5.5px;
-}
-
-.rule-checkbox input[type="checkbox"]::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 6px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: translate(-50%, -60%) rotate(45deg) scale(0);
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  opacity: 0;
-}
-
-.rule-checkbox input[type="checkbox"]:checked {
-  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.rule-checkbox input[type="checkbox"]:checked::before {
-  transform: translate(-50%, -60%) rotate(45deg) scale(1);
-  opacity: 1;
-}
-
-.rule-checkbox input[type="checkbox"]:hover {
-  border-color: var(--accent-primary);
-  transform: scale(1.05);
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15);
-}
-
-.rule-checkbox input[type="checkbox"]:hover:checked {
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3), 0 4px 8px rgba(0, 0, 0, 0.4);
-}
-
-.rule-checkbox input[type="checkbox"]:focus-visible {
-  outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
-}
-
-.rule-card .rule-header {
-  padding-left: 44px;
-  transition: padding-left 0.2s;
-}
-
-.rule-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid var(--border-divider);
-  gap: 15px;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.rule-title-section {
-  flex: 1;
-}
-
-.rule-header h3 {
-  color: var(--text-heading);
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin: 0 0 10px 0;
-  line-height: 1.5;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  min-width: 0;
-}
+/* .rule-card, .rule-checkbox, and .rule-header styles moved to components/rules/RuleCard/RuleCard.css */
 
 .rule-badges {
   display: flex;
@@ -1178,7 +1019,8 @@ body {
 
 .rule-arrow {
   color: var(--accent-primary);
-  font-size: 1.5rem;
+  /* Fluid arrow icon: scales from 1.25rem (mobile) to 1.5rem (desktop) */
+  font-size: clamp(1.25rem, 1.2rem + 0.6vw, 1.5rem);
   display: flex;
   align-items: center;
   flex-shrink: 0;
@@ -1209,7 +1051,7 @@ body {
 /* Mobile & Tablet: up to 1023px */
 @media (max-width: 1023px) {
   .app-container {
-    padding: 8px;
+    padding: 0;
     max-width: 100%;
   }
 
@@ -1281,14 +1123,8 @@ body {
     gap: 15px;
   }
 
-  .rules-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-
-  .rule-card {
-    padding: 15px;
-  }
+  /* .rules-grid mobile styles moved to components/rules/RuleGrid/RuleGrid.css */
+  /* .rule-card mobile styles moved to components/rules/RuleCard/RuleCard.css */
 
   .rule-header {
     flex-direction: column;
@@ -1378,7 +1214,8 @@ body {
 
 .modal-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  /* Fluid modal heading: scales from 1.25rem (mobile) to 1.5rem (desktop) */
+  font-size: clamp(1.25rem, 1.2rem + 0.6vw, 1.5rem);
   color: var(--text-heading);
   display: flex;
   align-items: center;

@@ -6,22 +6,17 @@
 }
 
 .app-header h1 {
-  font-size: 2.5rem;
+  /* Fluid heading: scales from 1.5rem (mobile) to 2.5rem (desktop) */
+  font-size: clamp(1.5rem, 1.25rem + 2vw, 2.5rem);
   margin-bottom: 10px;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
   color: var(--text-heading);
 }
 
 .app-header p {
-  font-size: 1.1rem;
+  /* Fluid subtitle: scales from 0.95rem (mobile) to 1.1rem (desktop) */
+  font-size: clamp(0.95rem, 0.9rem + 0.5vw, 1.1rem);
   opacity: 0.9;
   color: var(--text-primary);
-}
-
-/* Mobile & Tablet: up to 1023px */
-@media (max-width: 1023px) {
-  .app-header h1 {
-    font-size: 1.75rem;
-  }
 }
 
