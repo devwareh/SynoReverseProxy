@@ -1,6 +1,7 @@
 """Configuration management."""
 import os
 import socket
+import secrets
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
@@ -47,6 +48,24 @@ class Settings:
         self.synology_otp_code = os.getenv('SYNOLOGY_OTP_CODE') or None
         self.synology_device_name = os.getenv('SYNOLOGY_DEVICE_NAME') or socket.gethostname()
         self.synology_session_expiry_secs = int(os.getenv('SYNOLOGY_SESSION_EXPIRY_SECS', '518400'))
+        
+        # Web UI Authentication Configuration
+        self.app_username = os.getenv('APP_USERNAME', 'admin')
+        self.app_password = os.getenv('APP_PASSWORD')  # Optional, defaults to 'admin' if not set
+        self.app_session_secret_key = os.getenv('APP_SESSION_SECRET_KEY') or secrets.token_urlsafe(32)
+        self.app_session_expiry_secs = int(os.getenv('APP_SESSION_EXPIRY_SECS', '3600'))  # Default 1 hour
+        self.app_remember_me_expiry_secs = int(os.getenv('APP_REMEMBER_ME_EXPIRY_SECS', '2592000'))  # Default 30 days
+        # Security settings
+        self.app_use_https = os.getenv('APP_USE_HTTPS', 'false').lower() == 'true'  # Enable secure cookies for HTTPS
+        self.app_rate_limit_enabled = os.getenv('APP_RATE_LIMIT_ENABLED', 'true').lower() == 'true'
+        self.app_rate_limit_max_attempts = int(os.getenv('APP_RATE_LIMIT_MAX_ATTEMPTS', '5'))  # Max failed attempts
+        self.app_rate_limit_window = int(os.getenv('APP_RATE_LIMIT_WINDOW', '300'))  # 5 minutes window
+        
+        # Initialize web auth with provided password or default
+        from app.core.web_auth import initialize_web_auth
+        # Use provided password or default to 'admin' if not set
+        password_to_use = self.app_password if self.app_password else 'admin'
+        initialize_web_auth(self.app_username, password_to_use)
         
         # Validate required settings
         if not self.synology_username or not self.synology_password:

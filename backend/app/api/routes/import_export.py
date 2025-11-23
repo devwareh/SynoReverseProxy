@@ -2,7 +2,7 @@
 import time
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, Dict, Any, List
-from app.api.dependencies import get_mgr
+from app.api.dependencies import get_mgr, get_current_user
 from app.core.synology import SynoReverseProxyManager
 from app.models.schemas import ReverseProxyRule
 
@@ -164,7 +164,10 @@ def _check_duplicate_rule(new_rule: Dict[str, Any], existing_rules: List[Dict[st
 
 
 @router.get("/export")
-def export_rules(mgr: SynoReverseProxyManager = Depends(get_mgr)):
+def export_rules(
+    mgr: SynoReverseProxyManager = Depends(get_mgr),
+    _: str = Depends(get_current_user)
+):
     """Export all rules as JSON."""
     try:
         result = mgr.list_rules()
@@ -185,7 +188,11 @@ def export_rules(mgr: SynoReverseProxyManager = Depends(get_mgr)):
 
 
 @router.post("/import")
-async def import_rules(rules_data: Dict[str, Any], mgr: SynoReverseProxyManager = Depends(get_mgr)):
+async def import_rules(
+    rules_data: Dict[str, Any],
+    mgr: SynoReverseProxyManager = Depends(get_mgr),
+    _: str = Depends(get_current_user)
+):
     """Import rules from JSON. Expects {'rules': [list of rule objects]}.
     
     Checks for duplicates before creating rules:
@@ -287,7 +294,8 @@ async def import_rules(rules_data: Dict[str, Any], mgr: SynoReverseProxyManager 
 def validate_rule(
     rule: ReverseProxyRule, 
     exclude_rule_id: Optional[str] = Query(None),
-    mgr: SynoReverseProxyManager = Depends(get_mgr)
+    mgr: SynoReverseProxyManager = Depends(get_mgr),
+    _: str = Depends(get_current_user)
 ):
     """Validate a rule and check for conflicts (duplicate frontend FQDN+port)."""
     try:

@@ -1,8 +1,9 @@
 // Refactored App.js using modern component architecture
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
-import { FiPlus, FiX, FiSearch, FiShield, FiGlobe, FiDownload, FiUpload, FiTrash2, FiArrowUp, FiArrowDown, FiLayers, FiCheckCircle } from "react-icons/fi";
+import { FiPlus, FiX, FiSearch, FiShield, FiGlobe, FiDownload, FiUpload, FiTrash2, FiArrowUp, FiArrowDown, FiLayers, FiCheckCircle, FiLogOut, FiLock } from "react-icons/fi";
 import useRules from "./hooks/useRules";
 import useNotifications from "./hooks/useNotifications";
+import { useAuth } from "./contexts/AuthContext";
 import { authAPI } from "./utils/api";
 import { DEFAULT_RULE_FIELDS } from "./utils/constants";
 import { Header, Container, Toolbar } from "./components/layout";
@@ -11,6 +12,8 @@ import { RuleGrid } from "./components/rules";
 import { ToastContainer } from "./components/notifications";
 import { EmptyState, LoadingState } from "./components/empty-states";
 import Notification from "./components/notifications/Notification/Notification";
+import Login from "./components/auth/Login/Login";
+import ChangePassword from "./components/auth/ChangePassword/ChangePassword";
 import useKeyboardShortcuts from "./hooks/useKeyboardShortcuts";
 import "./App.css";
 
@@ -20,6 +23,8 @@ const Modal = lazy(() => import("./components/modals/Modal/Modal"));
 const ConfirmDialog = lazy(() => import("./components/modals/ConfirmDialog/ConfirmDialog"));
 
 function App() {
+  // Authentication
+  const { isAuthenticated, loading: authLoading, user, logout } = useAuth();
   // Use custom hooks
   const {
     rules,
@@ -50,6 +55,7 @@ function App() {
   const [otpCode, setOtpCode] = useState("");
   const [firstLoginLoading, setFirstLoginLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   // Check for auth errors
   useEffect(() => {
@@ -359,11 +365,63 @@ function App() {
   }, [showForm, confirmDialog, showFirstLogin]);
 
 
+  // Handle logout event from API interceptor
+  useEffect(() => {
+    const handleLogout = () => {
+      logout();
+    };
+    window.addEventListener('auth:logout', handleLogout);
+    return () => window.removeEventListener('auth:logout', handleLogout);
+  }, [logout]);
+
+  // Show login if not authenticated
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)' }}>
+        <LoadingState message="Checking authentication..." />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <SkipLink />
+        <Login />
+      </>
+    );
+  }
+
   return (
     <>
       <SkipLink targetId="main-content" />
       <Container>
-        <Header title="Synology Reverse Proxy Manager" subtitle="Manage your reverse proxy rules" />
+        <Header 
+          title="Synology Reverse Proxy Manager" 
+          subtitle={`Manage your reverse proxy rules${user ? ` • Logged in as ${user}` : ''}`}
+          rightActions={
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => setShowChangePassword(true)}
+                ariaLabel="Change password"
+                title="Change password"
+              >
+                <FiLock /> Change Password
+              </Button>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={logout}
+                ariaLabel="Logout"
+                title="Logout"
+              >
+                <FiLogOut /> Logout
+              </Button>
+            </div>
+          }
+        />
         
         <main id="main-content" className="app-content" role="main" aria-live="polite" aria-atomic="false">
         <ToastContainer notifications={notifications} onClose={removeNotification} />
@@ -418,15 +476,25 @@ function App() {
 
         {/* Confirm Dialog */}
         {confirmDialog && (
-          <ConfirmDialog
-            isOpen={confirmDialog.isOpen}
-            onClose={() => setConfirmDialog(null)}
-            onConfirm={confirmDialog.onConfirm}
-            title={confirmDialog.title}
-            message={confirmDialog.message}
-            variant="danger"
-          />
+          <Suspense fallback={null}>
+            <ConfirmDialog
+              isOpen={confirmDialog.isOpen}
+              onClose={() => setConfirmDialog(null)}
+              onConfirm={confirmDialog.onConfirm}
+              title={confirmDialog.title}
+              message={confirmDialog.message}
+              variant="danger"
+            />
+          </Suspense>
         )}
+
+        {/* Change Password Modal */}
+        <Suspense fallback={null}>
+          <ChangePassword
+            isOpen={showChangePassword}
+            onClose={() => setShowChangePassword(false)}
+          />
+        </Suspense>
 
         <Toolbar
           left={

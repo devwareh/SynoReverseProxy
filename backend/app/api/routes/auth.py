@@ -1,17 +1,45 @@
 """API routes for authentication."""
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response, Request, Cookie
 from pydantic import BaseModel
 from typing import Optional
 from app.core.auth import get_new_session, is_session_valid
 from app.core.config import get_settings
+from app.core.web_auth import (
+    verify_web_credentials,
+    create_session,
+    validate_session,
+    get_session_username,
+    delete_session,
+    update_password,
+    initialize_web_auth,
+    check_rate_limit,
+    record_failed_attempt,
+    clear_failed_attempts
+)
 from app.utils.encryption import load_session, save_session
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+# Cookie name for web session
+SESSION_COOKIE_NAME = "web_session_id"
 
 
 class FirstLoginRequest(BaseModel):
     """Request model for first login endpoint."""
     otp_code: Optional[str] = None
+
+
+class LoginRequest(BaseModel):
+    """Request model for web UI login."""
+    username: str
+    password: str
+    remember_me: bool = False
+
+
+class ChangePasswordRequest(BaseModel):
+    """Request model for password change."""
+    current_password: str
+    new_password: str
 
 
 @router.post("/first-login")
@@ -243,5 +271,195 @@ def get_new_session_with_otp(otp_code: Optional[str] = None) -> dict:
         'did': did,
         'synotoken': synotoken,
         'expiry_time': expiry_time
+    }
+
+
+@router.post("/login")
+def web_login(request: LoginRequest, response: Response, client_request: Request):
+    """
+    Web UI login endpoint.
+    
+    Authenticates user with username/password and creates a session.
+    Sets an HTTP-only cookie with the session ID.
+    """
+    try:
+        settings = get_settings()
+        
+        # Get client identifier for rate limiting (use IP address)
+        client_ip = client_request.client.host if client_request.client else "unknown"
+        rate_limit_id = f"{client_ip}:{request.username}"
+        
+        # Check rate limiting
+        if not check_rate_limit(rate_limit_id):
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "success": False,
+                    "error": "Too many attempts",
+                    "message": "Too many failed login attempts. Please try again later."
+                }
+            )
+        
+        # Verify credentials
+        if not verify_web_credentials(request.username, request.password):
+            # Record failed attempt
+            record_failed_attempt(rate_limit_id)
+            raise HTTPException(
+                status_code=401,
+                detail={
+                    "success": False,
+                    "error": "Invalid credentials",
+                    "message": "Username or password is incorrect."
+                }
+            )
+        
+        # Clear failed attempts on successful login
+        clear_failed_attempts(rate_limit_id)
+        
+        # Invalidate old sessions for this user (prevent session fixation)
+        # Note: In production with Redis, you'd query by username
+        # For now, we'll create a new session (old ones will expire naturally)
+        
+        # Create session
+        session_id = create_session(request.username, request.remember_me)
+        
+        # Set cookie with session ID
+        # Determine max_age based on remember_me
+        max_age = 30 * 24 * 60 * 60 if request.remember_me else 3600  # 30 days or 1 hour
+        
+        response.set_cookie(
+            key=SESSION_COOKIE_NAME,
+            value=session_id,
+            max_age=max_age,
+            httponly=True,
+            secure=settings.app_use_https,  # Use secure flag if HTTPS enabled
+            samesite="lax",
+            path="/"
+        )
+        
+        return {
+            "success": True,
+            "message": "Login successful",
+            "username": request.username,
+            "remember_me": request.remember_me
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": "Internal server error",
+                "message": "An unexpected error occurred. Please try again."
+            }
+        )
+
+
+@router.post("/logout")
+def web_logout(request: Request, response: Response, session_id: Optional[str] = Cookie(None, alias=SESSION_COOKIE_NAME)):
+    """
+    Web UI logout endpoint.
+    
+    Deletes the session and clears the cookie.
+    """
+    if session_id:
+        delete_session(session_id)
+    
+    # Clear cookie
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME,
+        path="/",
+        samesite="lax"
+    )
+    
+    return {
+        "success": True,
+        "message": "Logout successful"
+    }
+
+
+@router.get("/me")
+def get_current_user(session_id: Optional[str] = Cookie(None, alias=SESSION_COOKIE_NAME)):
+    """
+    Get current authenticated user info.
+    
+    Returns user info if authenticated, 401 if not.
+    """
+    if not session_id or not validate_session(session_id):
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "success": False,
+                "error": "Not authenticated",
+                "message": "No valid session found. Please log in."
+            }
+        )
+    
+    username = get_session_username(session_id)
+    if not username:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "success": False,
+                "error": "Not authenticated",
+                "message": "Invalid session."
+            }
+        )
+    
+    return {
+        "success": True,
+        "username": username,
+        "authenticated": True
+    }
+
+
+@router.post("/change-password")
+def change_password(
+    request: ChangePasswordRequest,
+    session_id: Optional[str] = Cookie(None, alias=SESSION_COOKIE_NAME)
+):
+    """
+    Change web UI password.
+    
+    Requires authentication and current password verification.
+    """
+    # Verify user is authenticated
+    if not session_id or not validate_session(session_id):
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "success": False,
+                "error": "Not authenticated",
+                "message": "Please log in to change your password."
+            }
+        )
+    
+    # Validate new password
+    if len(request.new_password) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": "Invalid password",
+                "message": "New password must be at least 8 characters long."
+            }
+        )
+    
+    # Update password
+    if not update_password(request.current_password, request.new_password):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": "Invalid password",
+                "message": "Current password is incorrect."
+            }
+        )
+    
+    return {
+        "success": True,
+        "message": "Password changed successfully. Please log in again."
     }
 

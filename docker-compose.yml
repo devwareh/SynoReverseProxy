@@ -25,6 +25,20 @@ services:
       - SYNOLOGY_DEVICE_NAME=${SYNOLOGY_DEVICE_NAME:-}
       # Optional: Session expiry in seconds (default: 518400 = 6 days)
       - SYNOLOGY_SESSION_EXPIRY_SECS=${SYNOLOGY_SESSION_EXPIRY_SECS:-518400}
+      # Web UI Authentication (defaults to admin/admin - CHANGE IN PRODUCTION!)
+      - APP_USERNAME=${APP_USERNAME:-admin}
+      - APP_PASSWORD=${APP_PASSWORD:-admin}
+      # Optional: Session secret key (auto-generated if not provided)
+      - APP_SESSION_SECRET_KEY=${APP_SESSION_SECRET_KEY:-}
+      # Optional: Web session expiry in seconds (default: 3600 = 1 hour)
+      - APP_SESSION_EXPIRY_SECS=${APP_SESSION_EXPIRY_SECS:-3600}
+      # Optional: Remember me expiry in seconds (default: 2592000 = 30 days)
+      - APP_REMEMBER_ME_EXPIRY_SECS=${APP_REMEMBER_ME_EXPIRY_SECS:-2592000}
+      # Security settings
+      - APP_USE_HTTPS=${APP_USE_HTTPS:-false}
+      - APP_RATE_LIMIT_ENABLED=${APP_RATE_LIMIT_ENABLED:-true}
+      - APP_RATE_LIMIT_MAX_ATTEMPTS=${APP_RATE_LIMIT_MAX_ATTEMPTS:-5}
+      - APP_RATE_LIMIT_WINDOW=${APP_RATE_LIMIT_WINDOW:-300}
       # Backend port (must match the port mapping above)
       - BACKEND_PORT=${BACKEND_PORT:-18888}
     restart: unless-stopped

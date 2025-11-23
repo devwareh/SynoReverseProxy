@@ -23,12 +23,18 @@ const getApiBase = () => {
 
 const API_BASE = getApiBase();
 
+// Log API base URL for debugging (remove in production)
+if (process.env.NODE_ENV === 'development') {
+  console.log('API Base URL:', API_BASE);
+}
+
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Include cookies in requests
 });
 
 // Request interceptor
@@ -45,9 +51,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle common errors
+    // Handle authentication errors
     if (error.response?.status === 401) {
-      // Authentication error - handled by components
+      // Check if it's a web auth error (not Synology auth)
+      const errorDetail = error.response?.data?.detail;
+      if (errorDetail && typeof errorDetail === 'object' && errorDetail.error === 'authentication_required') {
+        // Web UI authentication required - trigger logout
+        // Dispatch custom event for auth context to handle
+        window.dispatchEvent(new CustomEvent('auth:logout'));
+      }
     }
     return Promise.reject(error);
   }
@@ -71,6 +83,12 @@ export const rulesAPI = {
 
 export const authAPI = {
   firstLogin: (otpCode) => api.post('/auth/first-login', { otp_code: otpCode || null }),
+  login: (username, password, rememberMe = false) => 
+    api.post('/auth/login', { username, password, remember_me: rememberMe }),
+  logout: () => api.post('/auth/logout'),
+  checkAuth: () => api.get('/auth/me'),
+  changePassword: (currentPassword, newPassword) =>
+    api.post('/auth/change-password', { current_password: currentPassword, new_password: newPassword }),
 };
 
 export default api;

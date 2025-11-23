@@ -1,8 +1,42 @@
 """API dependencies for dependency injection."""
+from fastapi import HTTPException, Cookie
+from typing import Optional
 from app.core.synology import SynoReverseProxyManager
 from app.core.auth import get_new_session, is_session_valid
 from app.core.config import get_settings
+from app.core.web_auth import validate_session, get_session_username
 from app.utils.encryption import load_session
+
+# Cookie name for web session
+SESSION_COOKIE_NAME = "web_session_id"
+
+
+def get_current_user(session_id: Optional[str] = Cookie(None, alias=SESSION_COOKIE_NAME)) -> str:
+    """
+    Get current authenticated user from session cookie.
+    
+    Raises HTTPException(401) if not authenticated.
+    """
+    if not session_id or not validate_session(session_id):
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "error": "authentication_required",
+                "message": "Please log in to access this resource."
+            }
+        )
+    
+    username = get_session_username(session_id)
+    if not username:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "error": "authentication_required",
+                "message": "Invalid session. Please log in again."
+            }
+        )
+    
+    return username
 
 
 def get_mgr() -> SynoReverseProxyManager:

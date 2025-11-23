@@ -4,13 +4,16 @@ A modern web application for managing reverse proxy rules on Synology NAS device
 
 ## Features
 
-- 🔐 **Secure Authentication**: API v6 with device tokens (OTP only needed once)
+- 🔐 **Secure Authentication**:
+  - Web UI authentication (username/password) to protect the application
+  - Synology NAS API authentication with device tokens (OTP only needed once)
 - 🛡️ **CSRF Protection**: SynoToken integration for all API calls
 - 🎨 **Modern UI**: Beautiful, responsive design with smooth animations
 - ✨ **Full CRUD**: Create, Read, Update, and Delete reverse proxy rules
 - 🔍 **Search & Filter**: Quickly find rules by description or FQDN
 - 📱 **Responsive**: Works on desktop, tablet, and mobile devices
 - ⚡ **Real-time Updates**: Automatic refresh after operations
+- 🔑 **Password Management**: Change password functionality with "Remember Me" option
 
 ## Prerequisites
 
@@ -53,12 +56,15 @@ cp config/.env.example config/.env
 # - SYNOLOGY_USERNAME
 # - SYNOLOGY_PASSWORD
 # - SYNOLOGY_OTP_CODE (optional, only needed for first login)
+# - APP_USERNAME (optional, defaults to 'admin')
+# - APP_PASSWORD (optional, defaults to 'admin' if not set - CHANGE THIS IN PRODUCTION!)
 ```
 
 **Important**:
 
 - `SYNOLOGY_OTP_CODE` is only needed for the first login. After that, a device token will be stored and OTP won't be required for subsequent logins.
 - **Password is always required** - the device token only eliminates the need for OTP, not the password.
+- `APP_PASSWORD` sets the web UI password. If not set, defaults to `admin` (CHANGE THIS IN PRODUCTION!).
 - Never commit your `.env` file to version control (it's in `.gitignore`).
 
 ### 3. Frontend Setup
@@ -135,6 +141,7 @@ For production deployment on your NAS, Docker is the recommended method. This pr
 ### Quick Start with Docker
 
 1. **Set environment variables** in `docker-compose.yml`:
+
    ```yaml
    environment:
      - SYNOLOGY_NAS_URL=http://YOUR_NAS_IP:5000
@@ -143,6 +150,7 @@ For production deployment on your NAS, Docker is the recommended method. This pr
    ```
 
 2. **Build and start**:
+
    ```bash
    docker-compose up -d --build
    ```
@@ -205,9 +213,20 @@ For testing instructions, see [docs/TESTING.md](docs/TESTING.md).
 ## API Endpoints
 
 ### Authentication
+
+**Web UI Authentication:**
+
+- `POST /auth/login` - Login to web UI (username/password)
+- `POST /auth/logout` - Logout from web UI
+- `GET /auth/me` - Check current authentication status
+- `POST /auth/change-password` - Change web UI password
+
+**Synology NAS Authentication:**
+
 - `POST /auth/first-login` - Perform first-time authentication with optional OTP (see [First Login Setup](#first-login-setup))
 
 ### Rules Management
+
 - `GET /rules` - List all reverse proxy rules
 - `GET /rules/{rule_id}` - Get a single rule by ID
 - `POST /rules` - Create a new rule
@@ -226,6 +245,7 @@ After deploying the application (especially with Docker), you need to perform an
 **Recommended Method: Use the `/auth/first-login` API endpoint**
 
 This method is preferred because:
+
 - OTP codes expire quickly (30-60 seconds), making environment variables impractical
 - Works for both 2FA-enabled and non-2FA users
 - No container restart needed
@@ -247,19 +267,23 @@ No command line needed! Just use your browser:
 Only if you prefer command line:
 
 **For users with 2FA enabled:**
+
 ```bash
 curl -X POST http://your-nas-ip:18888/auth/first-login \
   -H "Content-Type: application/json" \
   -d '{"otp_code": "123456"}'
 ```
+
 (Replace `18888` with your custom `BACKEND_PORT` if set)
 
 **For users without 2FA:**
+
 ```bash
 curl -X POST http://your-nas-ip:18888/auth/first-login \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
+
 (Replace `18888` with your custom `BACKEND_PORT` if set)
 
 **Alternative: Environment Variable Method**
@@ -269,12 +293,14 @@ You can also set `SYNOLOGY_OTP_CODE` in environment variables, but this is less 
 ### Authentication Flow Details
 
 1. **First Login**:
+
    - Requires: Username + Password + OTP code (if 2FA enabled)
    - Uses OTP code from API endpoint or environment variables
    - Enables device token (`enable_device_token=yes`)
    - Stores device ID (DID) for future logins
 
 2. **Subsequent Logins**:
+
    - Requires: Username + Password + Device ID
    - Uses stored device ID to skip OTP requirement
    - **Note**: Password is still required - device token only eliminates OTP
@@ -288,6 +314,10 @@ You can also set `SYNOLOGY_OTP_CODE` in environment variables, but this is less 
 
 ## Security Features
 
+- ✅ **Web UI Authentication**: Username/password protection for the web application
+- ✅ **Session Management**: HTTP-only cookies with configurable expiry
+- ✅ **Remember Me**: Optional 30-day sessions for convenience
+- ✅ **Password Management**: Change password functionality
 - ✅ Environment variable configuration (no hardcoded credentials)
 - ✅ Encrypted session storage
 - ✅ CSRF protection with SynoToken
@@ -340,16 +370,28 @@ SynoReverseProxy/
 
 ### Environment Variables
 
-| Variable            | Required | Description                     | Default |
-| ------------------- | -------- | ------------------------------- | ------- |
-| `SYNOLOGY_NAS_URL`  | Yes      | Your NAS URL (http://ip:port)   | -       |
-| `SYNOLOGY_USERNAME` | Yes      | DSM username                    | -       |
-| `SYNOLOGY_PASSWORD` | Yes      | DSM password                    | -       |
-| `SYNOLOGY_OTP_CODE` | No\*     | 2FA OTP code (first login only) | -       |
+| Variable                       | Required | Description                         | Default           |
+| ------------------------------ | -------- | ----------------------------------- | ----------------- |
+| **Synology NAS Configuration** |
+| `SYNOLOGY_NAS_URL`             | Yes      | Your NAS URL (http://ip:port)       | -                 |
+| `SYNOLOGY_USERNAME`            | Yes      | DSM username                        | -                 |
+| `SYNOLOGY_PASSWORD`            | Yes      | DSM password                        | -                 |
+| `SYNOLOGY_OTP_CODE`            | No\*     | 2FA OTP code (first login only)     | -                 |
+| `SYNOLOGY_DEVICE_NAME`         | No       | Device identifier                   | Hostname          |
+| `SYNOLOGY_SESSION_EXPIRY_SECS` | No       | Session expiry in seconds           | 518400 (6 days)   |
+| **Web UI Authentication**      |
+| `APP_USERNAME`                 | No       | Web UI username                     | admin             |
+| `APP_PASSWORD`                 | No       | Web UI password                     | admin\*\*         |
+| `APP_SESSION_SECRET_KEY`       | No       | Session secret key (auto-generated) | auto-generated    |
+| `APP_SESSION_EXPIRY_SECS`      | No       | Web session expiry (seconds)        | 3600 (1 hour)     |
+| `APP_REMEMBER_ME_EXPIRY_SECS`  | No       | Remember me expiry (seconds)        | 2592000 (30 days) |
+| **Port Configuration**         |
+| `BACKEND_PORT`                 | No       | Backend API port                    | 18888             |
+| `FRONTEND_PORT`                | No       | Frontend web port                   | 8889              |
 
 \* OTP code is only needed for the first login. After device token is obtained, it's not required. **Note**: Password is always required - device token only skips OTP, not password. **Recommended**: Use the `/auth/first-login` API endpoint instead of setting this environment variable (see [First Login Setup](#first-login-setup)).
-| `SYNOLOGY_DEVICE_NAME` | No | Device identifier | Hostname |
-| `SYNOLOGY_SESSION_EXPIRY_SECS` | No | Session expiry in seconds | 518400 (6 days) |
+
+\*\* `APP_PASSWORD` defaults to `admin` if not set. **CHANGE THIS IN PRODUCTION!** The default credentials are `admin/admin` for initial setup convenience, similar to Portainer, AdGuard, and other self-hosted applications.
 
 ## Troubleshooting
 
@@ -360,6 +402,21 @@ SynoReverseProxy/
 - **"No valid session or device token found"**: You need to call `/auth/first-login` first (see [First Login Setup](#first-login-setup))
 - **"Session expired"**: The app will automatically renew, but check network connectivity
 - **"Device token not working"**: Delete `data/syno_session.json.enc` and call `/auth/first-login` again
+
+### Password Recovery (Web UI)
+
+If you've forgotten your web UI password:
+
+1. **Stop the backend server**
+2. **Delete the authentication file**:
+   ```bash
+   rm config/.web_auth.json
+   ```
+3. **Restart the backend server** - It will recreate credentials with default `admin/admin`
+4. **Log in with default credentials** (`admin/admin`)
+5. **Change your password** via the web UI (Change Password button in header)
+
+**Security Note**: This requires server access. In production, ensure proper access controls are in place.
 
 ### API Issues
 

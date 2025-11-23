@@ -9,6 +9,10 @@ syno_key.key
 syno_session.json.enc
 data/
 
+# Web authentication files (contains password hashes)
+config/.web_auth.json
+.web_auth.json
+
 # Python
 __pycache__/
 *.py[cod]
@@ -53,4 +57,42 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Testing & Coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Docker
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+
+# Frontend build artifacts (already in frontend/.gitignore, but adding here for completeness)
+frontend/build/
+frontend/.pnp
+frontend/.pnp.js
+frontend/coverage/
+
+# Local environment files
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 

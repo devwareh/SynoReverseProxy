@@ -1,7 +1,7 @@
 """API routes for reverse proxy rule CRUD operations."""
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
-from app.api.dependencies import get_mgr
+from app.api.dependencies import get_mgr, get_current_user
 from app.core.synology import SynoReverseProxyManager
 from app.models.schemas import ReverseProxyRule
 
@@ -9,7 +9,10 @@ router = APIRouter(prefix="/rules", tags=["rules"])
 
 
 @router.get("")
-def list_rules(mgr: SynoReverseProxyManager = Depends(get_mgr)):
+def list_rules(
+    mgr: SynoReverseProxyManager = Depends(get_mgr),
+    _: str = Depends(get_current_user)
+):
     """List all reverse proxy rules."""
     try:
         return mgr.list_rules()
@@ -21,7 +24,11 @@ def list_rules(mgr: SynoReverseProxyManager = Depends(get_mgr)):
 
 
 @router.get("/{rule_id}")
-def get_rule(rule_id: str, mgr: SynoReverseProxyManager = Depends(get_mgr)):
+def get_rule(
+    rule_id: str,
+    mgr: SynoReverseProxyManager = Depends(get_mgr),
+    _: str = Depends(get_current_user)
+):
     """Get a single reverse proxy rule by ID."""
     try:
         result = mgr.get_rule(rule_id)
@@ -35,7 +42,11 @@ def get_rule(rule_id: str, mgr: SynoReverseProxyManager = Depends(get_mgr)):
 
 
 @router.post("")
-def create_rule(rule: ReverseProxyRule, mgr: SynoReverseProxyManager = Depends(get_mgr)):
+def create_rule(
+    rule: ReverseProxyRule,
+    mgr: SynoReverseProxyManager = Depends(get_mgr),
+    _: str = Depends(get_current_user)
+):
     """Create a new reverse proxy rule."""
     try:
         rule_obj = mgr.build_rule(**rule.dict())
@@ -50,7 +61,12 @@ def create_rule(rule: ReverseProxyRule, mgr: SynoReverseProxyManager = Depends(g
 
 
 @router.put("/{rule_id}")
-def update_rule(rule_id: str, rule: ReverseProxyRule, mgr: SynoReverseProxyManager = Depends(get_mgr)):
+def update_rule(
+    rule_id: str,
+    rule: ReverseProxyRule,
+    mgr: SynoReverseProxyManager = Depends(get_mgr),
+    _: str = Depends(get_current_user)
+):
     """Update an existing reverse proxy rule."""
     try:
         rule_obj = mgr.build_rule(**rule.dict())
@@ -65,7 +81,11 @@ def update_rule(rule_id: str, rule: ReverseProxyRule, mgr: SynoReverseProxyManag
 
 
 @router.delete("/{rule_id}")
-def delete_rule(rule_id: str, mgr: SynoReverseProxyManager = Depends(get_mgr)):
+def delete_rule(
+    rule_id: str,
+    mgr: SynoReverseProxyManager = Depends(get_mgr),
+    _: str = Depends(get_current_user)
+):
     """Delete a single reverse proxy rule by ID."""
     try:
         result = mgr.delete_rule(rule_id)
@@ -86,7 +106,11 @@ def delete_rule(rule_id: str, mgr: SynoReverseProxyManager = Depends(get_mgr)):
 
 
 @router.post("/bulk-delete")
-def bulk_delete_rules(rule_ids: List[str], mgr: SynoReverseProxyManager = Depends(get_mgr)):
+def bulk_delete_rules(
+    rule_ids: List[str],
+    mgr: SynoReverseProxyManager = Depends(get_mgr),
+    _: str = Depends(get_current_user)
+):
     """Delete multiple reverse proxy rules by IDs."""
     try:
         if not rule_ids or len(rule_ids) == 0:
