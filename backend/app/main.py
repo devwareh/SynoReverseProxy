@@ -17,7 +17,12 @@ app = FastAPI(
 # CORS middleware
 # When using credentials (cookies), we cannot use wildcard "*" for origins
 # We need to specify allowed origins explicitly
-# For development, allow common localhost ports
+import os
+
+# Check if we're in development mode
+is_development = os.getenv("ENVIRONMENT", "development").lower() != "production"
+
+# Base allowed origins (always allowed)
 allowed_origins = [
     "http://localhost:3000",
     "http://localhost:3001",
@@ -27,14 +32,23 @@ allowed_origins = [
 ]
 
 # Add any additional origins from environment variable (comma-separated)
-import os
 extra_origins = os.getenv("CORS_ORIGINS", "")
 if extra_origins:
     allowed_origins.extend([origin.strip() for origin in extra_origins.split(",")])
 
+# In development, also allow local network IP addresses using regex
+# This allows access from other devices on the same network (e.g., 192.168.0.210:3000)
+allow_origin_regex = None
+if is_development:
+    # Allow any IP in private network ranges (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+    # on common development ports (3000, 3001)
+    # Pattern: http:// or https:// followed by private IP, then :3000 or :3001
+    allow_origin_regex = r"https?://(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+|localhost|127\.0\.0\.1|0\.0\.0\.0):(3000|3001)"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=allow_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
