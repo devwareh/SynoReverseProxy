@@ -156,6 +156,7 @@ body {
 /* .app-header styles moved to components/layout/Header/Header.css */
 
 .app-content {
+  flex: 1; /* Allow content to grow and push footer down */
   background: var(--bg-card);
   border-radius: 12px;
   padding: 30px;

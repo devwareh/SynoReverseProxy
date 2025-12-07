@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../utils/api';
+import { authAPI, API_BASE } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -78,9 +78,11 @@ export const AuthProvider = ({ children }) => {
           console.error('Auth check after network error failed:', e);
         }
         
+        // Get the actual API base URL for better error message
+        const apiUrl = API_BASE || 'http://localhost:8000';
         return { 
           success: false, 
-          error: 'Network error. Please check if the backend server is running on port 8000.' 
+          error: `Network error. Please check if the backend server is running at ${apiUrl}.` 
         };
       }
       

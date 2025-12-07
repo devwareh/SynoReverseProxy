@@ -6,7 +6,7 @@ import useNotifications from "./hooks/useNotifications";
 import { useAuth } from "./contexts/AuthContext";
 import { authAPI } from "./utils/api";
 import { DEFAULT_RULE_FIELDS } from "./utils/constants";
-import { Header, Container, Toolbar } from "./components/layout";
+import { Header, Container, Toolbar, Footer } from "./components/layout";
 import { Button, Input, Checkbox, SkipLink, Select } from "./components/common";
 import { RuleGrid } from "./components/rules";
 import { ToastContainer } from "./components/notifications";
@@ -393,7 +393,7 @@ function App() {
   }
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <SkipLink targetId="main-content" />
       <Container>
         <Header 
@@ -633,8 +633,9 @@ function App() {
           )}
         </div>
         </main>
+        <Footer />
       </Container>
-    </>
+    </div>
   );
 }
 

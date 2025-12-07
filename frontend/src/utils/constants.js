@@ -48,3 +48,6 @@ export const KEYBOARD_SHORTCUTS = {
   ESCAPE: { key: 'Escape', label: 'Close modal/dialog' },
 };
 
+// Re-export version info
+export { APP_VERSION, VERSION_INFO } from './version';
+

@@ -210,3 +210,4 @@ These files will NOT be committed:
 - 🔒 `*.key` - Encryption keys
 - 🔒 `*.enc` - Encrypted files
 - 🔒 `logs/*` - Log files
+
