@@ -9,12 +9,25 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 0.5rem;
   box-shadow: var(--elevation-1);
   position: relative;
   min-height: 44px; /* Touch target size */
   white-space: nowrap;
   flex-wrap: nowrap;
+  line-height: 1.5;
+  vertical-align: middle;
+}
+
+/* Ensure icons in any .btn element (including labels) are properly aligned */
+.btn svg {
+  flex-shrink: 0;
+  width: 1.125em;
+  height: 1.125em;
+  vertical-align: middle;
+  display: inline-block;
+  margin: 0;
+  position: relative;
 }
 
 .btn:disabled {
@@ -97,12 +110,45 @@
 .btn-icon-wrapper {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  line-height: 1;
 }
 
 .btn-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   flex: 0 1 auto;
   min-width: 0;
+  line-height: 1;
+}
+
+/* Style React Icons (they render as SVG) - ensure proper alignment */
+.btn-text svg {
+  flex-shrink: 0;
+  width: 1.125em;
+  height: 1.125em;
+  vertical-align: middle;
+  display: inline-block;
+  margin: 0;
+  position: relative;
+  top: 0;
+}
+
+/* Handle icons that are direct children (not wrapped) */
+.btn-text > svg {
+  flex-shrink: 0;
+  width: 1.125em;
+  height: 1.125em;
+}
+
+/* Handle text nodes - ensure they align with icons */
+.btn-text > *:not(svg):not(:empty) {
+  display: inline;
+  vertical-align: baseline;
+  line-height: inherit;
 }
 
 .btn .spinner {

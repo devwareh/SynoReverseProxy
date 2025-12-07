@@ -1084,8 +1084,23 @@ body {
 .file-input-wrapper {
   margin: 0;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  line-height: 1;
 }
 
 .file-input-wrapper input[type="file"] {
   display: none;
+}
+
+/* Ensure icons in file-input-wrapper are properly aligned */
+.file-input-wrapper svg {
+  flex-shrink: 0;
+  width: 1.125em;
+  height: 1.125em;
+  vertical-align: middle;
+  display: inline-block;
+  margin: 0;
 }
