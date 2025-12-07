@@ -74,17 +74,21 @@ def get_new_session(device_id: Optional[str] = None, otp_code: Optional[str] = N
     }
 
 
-def is_session_valid(sid: str, synotoken: Optional[str] = None) -> bool:
+def is_session_valid(sid: Optional[str], synotoken: Optional[str] = None) -> bool:
     """
     Validate session by checking if SID is still valid.
     
     Args:
-        sid: Session ID to validate
+        sid: Session ID to validate (can be None if session expired but device token exists)
         synotoken: Optional SynoToken for CSRF protection
         
     Returns:
-        True if session is valid, False otherwise
+        True if session is valid, False otherwise (also returns False if sid is None)
     """
+    # If sid is None, session is not valid (but device token may still exist)
+    if not sid:
+        return False
+    
     settings = get_settings()
     check_url = f"{settings.synology_nas_url}/webapi/entry.cgi"
     params = {

@@ -62,8 +62,9 @@ def first_login(request: FirstLoginRequest):
         # Check if device token already exists
         existing_session = load_session()
         if existing_session and existing_session.get('did'):
-            # Check if session is still valid
-            if is_session_valid(existing_session.get('sid'), existing_session.get('synotoken')):
+            # Check if session is still valid (only if sid exists)
+            sid = existing_session.get('sid')
+            if sid and is_session_valid(sid, existing_session.get('synotoken')):
                 return {
                     "success": True,
                     "message": "Device token already exists and session is valid. No login needed.",

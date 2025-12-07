@@ -51,10 +51,11 @@ def get_mgr() -> SynoReverseProxyManager:
     session_data = load_session()
     
     # Check if we have a valid session
+    sid = session_data.get('sid') if session_data else None
     has_valid_session = (
         session_data is not None and 
-        session_data.get('sid') and 
-        is_session_valid(session_data['sid'], session_data.get('synotoken'))
+        sid and 
+        is_session_valid(sid, session_data.get('synotoken'))
     )
     
     if not has_valid_session:

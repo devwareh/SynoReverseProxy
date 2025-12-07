@@ -35,11 +35,7 @@ def save_session(sid: str, did: Optional[str], synotoken: Optional[str], expiry_
 
 
 def load_session() -> Optional[Dict[str, Any]]:
-    """Load session data including SID, device ID, and SynoToken.
-    
-    Even if the session expires, the device_id (DID) is preserved
-    so it can be used to get a new session without OTP.
-    """
+    """Load session data including SID, device ID, and SynoToken."""
     if not os.path.exists(SESSION_FILE):
         return None
     try:
@@ -48,32 +44,14 @@ def load_session() -> Optional[Dict[str, Any]]:
             decrypted = FERNET.decrypt(f.read())
         data = json.loads(decrypted)
         sid = data.get('sid')
-        did = data.get('did')  # Extract device_id - this is permanent
-        synotoken = data.get('synotoken')
         expiry = data.get('expiry_time')
-        
-        # Check if session is valid
-        is_valid = sid and (not expiry or time.time() <= expiry)
-        
-        if is_valid:
-            # Session is valid, return everything
-            return {
-                'sid': sid,
-                'did': did,
-                'synotoken': synotoken,
-                'expiry_time': expiry
-            }
-        elif did:
-            # Session expired but we have device_id - preserve it for OTP-less login
-            return {
-                'sid': None,
-                'did': did,
-                'synotoken': None,
-                'expiry_time': None
-            }
-        else:
-            # No valid session and no device_id
+        if not sid or (expiry and time.time() > expiry):
             return None
+        return {
+            'sid': sid,
+            'did': data.get('did'),
+            'synotoken': data.get('synotoken'),
+            'expiry_time': expiry
+        }
     except Exception:
         return None
-
