@@ -50,8 +50,14 @@ def get_mgr() -> SynoReverseProxyManager:
     settings = get_settings()
     session_data = load_session()
     
-    # If no session or session invalid, create new one
-    if session_data is None or not is_session_valid(session_data['sid'], session_data.get('synotoken')):
+    # Check if we have a valid session
+    has_valid_session = (
+        session_data is not None and 
+        session_data.get('sid') and 
+        is_session_valid(session_data['sid'], session_data.get('synotoken'))
+    )
+    
+    if not has_valid_session:
         # Try to use device_id if available for OTP-less login
         device_id = session_data.get('did') if session_data else None
         if device_id:
