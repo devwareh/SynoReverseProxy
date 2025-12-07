@@ -3,12 +3,14 @@ import bcrypt
 import secrets
 import time
 import json
+import os
 from pathlib import Path
 from typing import Optional, Dict, Any
 from collections import defaultdict
-from app.core.config import PROJECT_ROOT, CONFIG_DIR
+from app.core.config import PROJECT_ROOT, CONFIG_DIR, DATA_DIR
+from app.utils.encryption import FERNET
 
-# Session storage (in-memory for now, consider Redis for production)
+# Session storage (persisted to disk, encrypted)
 _sessions: Dict[str, Dict[str, Any]] = {}
 
 # Rate limiting: track failed login attempts per IP/username
@@ -16,6 +18,8 @@ _failed_attempts: Dict[str, list] = defaultdict(list)
 
 # Web auth file path
 WEB_AUTH_FILE = CONFIG_DIR / ".web_auth.json"
+# Web sessions file path (encrypted, stored in data directory)
+WEB_SESSIONS_FILE = DATA_DIR / "web_sessions.json.enc"
 
 
 def hash_password(password: str) -> str:
@@ -136,13 +140,89 @@ def update_password(current_password: str, new_password: str) -> bool:
     
     # Invalidate all existing sessions (force re-login)
     _sessions.clear()
+    save_web_sessions()
     
     return True
+
+
+def load_web_sessions() -> Dict[str, Dict[str, Any]]:
+    """Load web UI sessions from encrypted file."""
+    if not WEB_SESSIONS_FILE.exists():
+        return {}
+    
+    try:
+        with open(WEB_SESSIONS_FILE, 'rb') as f:
+            encrypted_data = f.read()
+        
+        if not encrypted_data:
+            return {}
+        
+        decrypted = FERNET.decrypt(encrypted_data)
+        sessions_data = json.loads(decrypted)
+        
+        # Validate and filter expired sessions
+        now = time.time()
+        valid_sessions = {}
+        for session_id, session_info in sessions_data.items():
+            expires_at = session_info.get('expires_at', 0)
+            if expires_at > now:
+                valid_sessions[session_id] = session_info
+        
+        return valid_sessions
+    except Exception:
+        # If file is corrupted or invalid, return empty dict
+        # File will be recreated on next save
+        return {}
+
+
+def save_web_sessions():
+    """Save web UI sessions to encrypted file."""
+    try:
+        # Ensure data directory exists
+        DATA_DIR.mkdir(exist_ok=True, mode=0o755)
+        
+        # Encrypt sessions data
+        sessions_json = json.dumps(_sessions)
+        encrypted = FERNET.encrypt(sessions_json.encode('utf-8'))
+        
+        # Write to file
+        with open(WEB_SESSIONS_FILE, 'wb') as f:
+            f.write(encrypted)
+        
+        # Set file permissions to 600 (read/write for owner only)
+        try:
+            WEB_SESSIONS_FILE.chmod(0o600)
+        except Exception:
+            pass  # Ignore permission errors on some systems
+    except Exception:
+        # Log error but don't fail - sessions will be lost but app continues
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error("Failed to save web sessions", exc_info=True)
+
+
+def cleanup_expired_sessions():
+    """Remove expired sessions from memory and disk."""
+    now = time.time()
+    expired_ids = []
+    
+    for session_id, session_info in _sessions.items():
+        expires_at = session_info.get('expires_at', 0)
+        if expires_at <= now:
+            expired_ids.append(session_id)
+    
+    for session_id in expired_ids:
+        del _sessions[session_id]
+    
+    # Save cleaned sessions to disk
+    if expired_ids:
+        save_web_sessions()
 
 
 def delete_all_sessions():
     """Delete all sessions (useful for password change)."""
     _sessions.clear()
+    save_web_sessions()
 
 
 def create_session(username: str, remember_me: bool = False) -> str:
@@ -164,6 +244,9 @@ def create_session(username: str, remember_me: bool = False) -> str:
         "remember_me": remember_me
     }
     
+    # Persist to disk
+    save_web_sessions()
+    
     return session_id
 
 
@@ -178,6 +261,7 @@ def validate_session(session_id: str) -> bool:
     if time.time() > session["expires_at"]:
         # Remove expired session
         del _sessions[session_id]
+        save_web_sessions()
         return False
     
     return True
@@ -198,6 +282,7 @@ def delete_session(session_id: str):
     """Delete a session."""
     if session_id in _sessions:
         del _sessions[session_id]
+        save_web_sessions()
 
 
 def check_rate_limit(identifier: str) -> bool:
@@ -240,4 +325,11 @@ def clear_failed_attempts(identifier: str):
     """Clear failed attempts for an identifier (on successful login)."""
     if identifier in _failed_attempts:
         del _failed_attempts[identifier]
+
+
+# Load sessions from disk on module initialization
+_sessions = load_web_sessions()
+
+# Clean up expired sessions on startup
+cleanup_expired_sessions()
 

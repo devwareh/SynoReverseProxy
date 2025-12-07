@@ -83,6 +83,10 @@ docker-compose.override.yaml
 *.orig
 *.save
 
+# Test backup files
+tests/**/*.backup*
+tests/**/*.enc.backup*
+
 # Frontend build artifacts (already in frontend/.gitignore, but adding here for completeness)
 frontend/build/
 frontend/.pnp
@@ -95,4 +99,7 @@ frontend/coverage/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Local deployment scripts (user-specific)
+scripts/build-on-nas.sh
 
