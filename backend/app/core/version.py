@@ -10,7 +10,7 @@ Follow semantic versioning: MAJOR.MINOR.PATCH
 """
 
 # Application version
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 
 # Version metadata
 VERSION_INFO = {
