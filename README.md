@@ -160,6 +160,40 @@ For production deployment on your NAS, Docker is the recommended method. This pr
    - Backend API: `http://your-nas-ip:18888` (or custom port if `BACKEND_PORT` is set)
    - API Docs: `http://your-nas-ip:18888/docs` (or custom port)
 
+### Quick Start with Published Docker Images (No Build Required)
+
+Pre-built Docker images are available from GitHub Container Registry (GHCR). This is the fastest way to get started:
+
+1. **Clone the repository**:
+
+   ```bash
+   git clone https://github.com/devwareh/SynoReverseProxy.git
+   cd SynoReverseProxy
+   ```
+
+2. **Set your environment variables**:
+
+   ```bash
+   export SYNOLOGY_NAS_URL=http://YOUR_NAS_IP:5000
+   export SYNOLOGY_USERNAME=your_username
+   export SYNOLOGY_PASSWORD=your_password
+   ```
+
+   Or create a `.env` file in the project root with these variables.
+
+3. **Start with published images** (no build required):
+
+   ```bash
+   docker-compose -f docker-compose.published.yml up -d
+   ```
+
+4. **Access the application**:
+   - Frontend UI: `http://your-nas-ip:8889`
+   - Backend API: `http://your-nas-ip:18888`
+   - API Docs: `http://your-nas-ip:18888/docs`
+
+**Note**: The published images are pulled from `ghcr.io/devwareh/syno-reverse-proxy-backend:latest` and `ghcr.io/devwareh/syno-reverse-proxy-frontend:latest`. If you need to build custom images, use the regular `docker-compose.yml` file instead.
+
 ### Portainer Deployment
 
 1. Open Portainer → Stacks → Add Stack
