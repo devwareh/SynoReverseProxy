@@ -1,0 +1,34 @@
+version: '3.8'
+
+# Use this file to build images from source instead of using published images
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+# Or: docker-compose -f docker-compose.build.yml up -d --build
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        # Backend port (default: 18888, can be changed)
+        - BACKEND_PORT=${BACKEND_PORT:-18888}
+    # Remove image line when building
+    image: null
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Backend API URL for frontend to connect to
+        # Leave empty to use window.location.hostname fallback (recommended)
+        # Or set to your NAS hostname:PORT for fixed URL
+        - REACT_APP_API_URL=
+        # Backend API port (must match BACKEND_PORT)
+        # Frontend uses this to connect to backend API
+        - REACT_APP_API_PORT=${BACKEND_PORT:-18888}
+        # Frontend port (default: 8889, can be changed)
+        - NGINX_PORT=${FRONTEND_PORT:-8889}
+    # Remove image line when building
+    image: null
+

@@ -140,28 +140,6 @@ For production deployment on your NAS, Docker is the recommended method. This pr
 
 ### Quick Start with Docker
 
-1. **Set environment variables** in `docker-compose.yml`:
-
-   ```yaml
-   environment:
-     - SYNOLOGY_NAS_URL=http://YOUR_NAS_IP:5000
-     - SYNOLOGY_USERNAME=your_username
-     - SYNOLOGY_PASSWORD=your_password
-   ```
-
-2. **Build and start**:
-
-   ```bash
-   docker-compose up -d --build
-   ```
-
-3. **Access the application** (using default ports):
-   - Frontend UI: `http://your-nas-ip:8889` (or custom port if `FRONTEND_PORT` is set)
-   - Backend API: `http://your-nas-ip:18888` (or custom port if `BACKEND_PORT` is set)
-   - API Docs: `http://your-nas-ip:18888/docs` (or custom port)
-
-### Quick Start with Published Docker Images (No Build Required)
-
 Pre-built Docker images are available from GitHub Container Registry (GHCR). This is the fastest way to get started:
 
 1. **Clone the repository**:
@@ -181,22 +159,22 @@ Pre-built Docker images are available from GitHub Container Registry (GHCR). Thi
 
    Or create a `.env` file in the project root with these variables.
 
-3. **Start with published images** (no build required):
+3. **Start the application** (uses published images by default):
 
    ```bash
-   docker-compose -f docker-compose.published.yml up -d
+   docker-compose up -d
    ```
 
-4. **Access the application**:
-   - Frontend UI: `http://your-nas-ip:8889`
-   - Backend API: `http://your-nas-ip:18888`
-   - API Docs: `http://your-nas-ip:18888/docs`
+4. **Access the application** (using default ports):
+   - Frontend UI: `http://your-nas-ip:8889` (or custom port if `FRONTEND_PORT` is set)
+   - Backend API: `http://your-nas-ip:18888` (or custom port if `BACKEND_PORT` is set)
+   - API Docs: `http://your-nas-ip:18888/docs` (or custom port)
 
-**Note**: The published images use version tags (`v1.0.0`) for reproducibility. Images are available at:
-- `ghcr.io/devwareh/syno-reverse-proxy-backend:v1.0.0`
-- `ghcr.io/devwareh/syno-reverse-proxy-frontend:v1.0.0`
+**Note**: By default, `docker-compose.yml` uses published images from GHCR (`v1.0.0`). If you need to build from source (for development or custom changes), use:
 
-If you need to build custom images from source, use the regular `docker-compose.yml` file instead.
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+```
 
 ### Portainer Deployment
 
