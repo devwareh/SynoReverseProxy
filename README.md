@@ -192,7 +192,11 @@ Pre-built Docker images are available from GitHub Container Registry (GHCR). Thi
    - Backend API: `http://your-nas-ip:18888`
    - API Docs: `http://your-nas-ip:18888/docs`
 
-**Note**: The published images are pulled from `ghcr.io/devwareh/syno-reverse-proxy-backend:latest` and `ghcr.io/devwareh/syno-reverse-proxy-frontend:latest`. If you need to build custom images, use the regular `docker-compose.yml` file instead.
+**Note**: The published images use version tags (`v1.0.0`) for reproducibility. Images are available at:
+- `ghcr.io/devwareh/syno-reverse-proxy-backend:v1.0.0`
+- `ghcr.io/devwareh/syno-reverse-proxy-frontend:v1.0.0`
+
+If you need to build custom images from source, use the regular `docker-compose.yml` file instead.
 
 ### Portainer Deployment
 

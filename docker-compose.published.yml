@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    image: ghcr.io/devwareh/syno-reverse-proxy-backend:latest
+    image: ghcr.io/devwareh/syno-reverse-proxy-backend:v1.0.0
     container_name: syno-reverse-proxy-backend
     ports:
       - "${BACKEND_PORT:-18888}:${BACKEND_PORT:-18888}"
@@ -48,7 +48,7 @@ services:
       - syno-network
 
   frontend:
-    image: ghcr.io/devwareh/syno-reverse-proxy-frontend:latest
+    image: ghcr.io/devwareh/syno-reverse-proxy-frontend:v1.0.0
     container_name: syno-reverse-proxy-frontend
     ports:
       - "${FRONTEND_PORT:-8889}:${FRONTEND_PORT:-8889}"
