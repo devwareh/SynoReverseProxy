@@ -3,504 +3,248 @@
 [![CI](https://github.com/devwareh/SynoReverseProxy/actions/workflows/ci.yml/badge.svg)](https://github.com/devwareh/SynoReverseProxy/actions/workflows/ci.yml)
 [![Docker](https://github.com/devwareh/SynoReverseProxy/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/devwareh/SynoReverseProxy/actions/workflows/docker-publish.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub release](https://img.shields.io/github/v/release/devwareh/SynoReverseProxy)](https://github.com/devwareh/SynoReverseProxy/releases)
 
-A modern web application for managing reverse proxy rules on Synology NAS devices. Features secure authentication with device tokens, CSRF protection, and a beautiful, responsive UI with full CRUD operations.
+A web application for managing reverse proxy rules on Synology NAS. Designed for Docker deployment with Portainer and Synology Container Manager.
 
 ## Features
 
-- 🔐 **Secure Authentication**:
-  - Web UI authentication (username/password) to protect the application
-  - Synology NAS API authentication with device tokens (OTP only needed once)
-- 🛡️ **CSRF Protection**: SynoToken integration for all API calls
-- 🎨 **Modern UI**: Beautiful, responsive design with smooth animations
-- ✨ **Full CRUD**: Create, Read, Update, and Delete reverse proxy rules
-- 🔍 **Search & Filter**: Quickly find rules by description or FQDN
-- 📱 **Responsive**: Works on desktop, tablet, and mobile devices
-- ⚡ **Real-time Updates**: Automatic refresh after operations
-- 🔑 **Password Management**: Change password functionality with "Remember Me" option
+- Manage reverse proxy rules through a web interface
+- Secure authentication with device tokens (OTP only needed once)
+- First-run setup wizard (no default passwords)
+- Full CRUD operations on proxy rules
+- Import/Export rules as JSON
+- Search and filter rules
+- Responsive design for mobile and desktop
 
-## Prerequisites
+## Quick Start
 
-- Python 3.8+
-- Node.js 14+ and npm
-- Synology NAS with DSM 6.0+
-- Network access to your Synology NAS
+### Prerequisites
 
-## Installation
+- Synology NAS with DSM 6.0 or higher
+- Docker installed (via Portainer or Synology Container Manager)
+- Network access to your NAS
 
-### 1. Clone the repository
+### Deployment
+
+#### Option 1: Portainer (Recommended)
+
+1. Open Portainer → **Stacks** → **Add Stack**
+2. Name your stack (e.g., `syno-reverse-proxy`)
+3. Paste the contents of `docker-compose.yml` from this repository
+4. Set environment variables:
+   ```
+   SYNOLOGY_NAS_URL=http://YOUR_NAS_IP:5000
+   SYNOLOGY_USERNAME=your_dsm_username
+   SYNOLOGY_PASSWORD=your_dsm_password
+   ```
+5. Click **Deploy the stack**
+6. Access the web UI at `http://your-nas-ip:8889`
+
+#### Option 2: Synology Container Manager
+
+1. Download `docker-compose.yml` from this repository
+2. Open **Container Manager** → **Project** → **Create**
+3. Upload the `docker-compose.yml` file
+4. Set environment variables in the UI
+5. Click **Deploy**
+6. Access the web UI at `http://your-nas-ip:8889`
+
+#### Option 3: Command Line
 
 ```bash
-git clone <repository-url>
+# Clone the repository
+git clone https://github.com/devwareh/SynoReverseProxy.git
 cd SynoReverseProxy
-```
 
-### 2. Backend Setup
+# Set environment variables
+export SYNOLOGY_NAS_URL=http://YOUR_NAS_IP:5000
+export SYNOLOGY_USERNAME=your_username
+export SYNOLOGY_PASSWORD=your_password
 
-This project uses a conda environment called `synoenv`. If you don't have it yet, create it:
-
-```bash
-# Create conda environment (if it doesn't exist)
-conda create -n synoenv python=3.10 -y
-conda activate synoenv
-
-# Install Python dependencies
-pip install -r backend/requirements.txt
-```
-
-**Create .env file:**
-
-```bash
-# Copy the example file
-cp config/.env.example config/.env
-
-# Edit config/.env with your actual credentials
-# Required variables:
-# - SYNOLOGY_NAS_URL
-# - SYNOLOGY_USERNAME
-# - SYNOLOGY_PASSWORD
-# - SYNOLOGY_OTP_CODE (optional, only needed for first login)
-# - APP_USERNAME (optional, defaults to 'admin')
-# - APP_PASSWORD (optional, defaults to 'admin' if not set - CHANGE THIS IN PRODUCTION!)
-```
-
-**Important**:
-
-- `SYNOLOGY_OTP_CODE` is only needed for the first login. After that, a device token will be stored and OTP won't be required for subsequent logins.
-- **Password is always required** - the device token only eliminates the need for OTP, not the password.
-- `APP_PASSWORD` sets the web UI password. If not set, defaults to `admin` (CHANGE THIS IN PRODUCTION!).
-- Never commit your `.env` file to version control (it's in `.gitignore`).
-
-### 3. Frontend Setup
-
-```bash
-cd frontend
-npm install
-```
-
-## Usage
-
-### Quick Start (Recommended)
-
-Use the provided startup script to run both backend and frontend:
-
-```bash
-./scripts/start.sh
-```
-
-This script will:
-
-- Check prerequisites (conda, Node.js, npm)
-- Verify `.env` file exists
-- Activate the `synoenv` conda environment
-- Install/update Python dependencies
-- Install/update Node dependencies
-- Start both backend and frontend servers
-- Display server URLs and PIDs
-
-To stop the servers, press `Ctrl+C` or run:
-
-```bash
-./scripts/stop.sh
-```
-
-### Manual Start
-
-#### Start the Backend
-
-```bash
-# From project root
-# Activate conda environment
-conda activate synoenv
-
-# Install dependencies (first time only)
-pip install -r backend/requirements.txt
-
-# Start server (from backend directory)
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-The API will be available at `http://localhost:8000`
-
-#### Start the Frontend
-
-```bash
-# From frontend directory
-cd frontend
-
-# Install dependencies (first time only)
-npm install
-
-# Start development server
-HOST=0.0.0.0 npm start
-```
-
-The UI will be available at `http://localhost:3000`
-
-## Docker Deployment (Recommended for NAS)
-
-For production deployment on your NAS, Docker is the recommended method. This provides better isolation, easier updates, and works seamlessly with Portainer and Synology Container Manager.
-
-### Quick Start with Docker
-
-Pre-built Docker images are available from GitHub Container Registry (GHCR). This is the fastest way to get started:
-
-1. **Clone the repository**:
-
-   ```bash
-   git clone https://github.com/devwareh/SynoReverseProxy.git
-   cd SynoReverseProxy
-   ```
-
-2. **Set your environment variables**:
-
-   ```bash
-   export SYNOLOGY_NAS_URL=http://YOUR_NAS_IP:5000
-   export SYNOLOGY_USERNAME=your_username
-   export SYNOLOGY_PASSWORD=your_password
-   ```
-
-   Or create a `.env` file in the project root with these variables.
-
-3. **Start the application** (uses published images by default):
-
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **Access the application** (using default ports):
-   - Frontend UI: `http://your-nas-ip:8889` (or custom port if `FRONTEND_PORT` is set)
-   - Backend API: `http://your-nas-ip:18888` (or custom port if `BACKEND_PORT` is set)
-   - API Docs: `http://your-nas-ip:18888/docs` (or custom port)
-
-**Note**: By default, `docker-compose.yml` uses published images from GHCR (`v1.0.0`). If you need to build from source (for development or custom changes), use:
-
-```bash
-docker-compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-```
-
-### Portainer Deployment
-
-1. Open Portainer → Stacks → Add Stack
-2. Upload or paste `docker-compose.yml`
-3. Set environment variables in Portainer's UI:
-   - `SYNOLOGY_NAS_URL`
-   - `SYNOLOGY_USERNAME`
-   - `SYNOLOGY_PASSWORD`
-   - `SYNOLOGY_OTP_CODE` (optional, first login only)
-   - `FRONTEND_PORT` (optional, default: 8889)
-   - `BACKEND_PORT` (optional, default: 18888)
-4. Deploy the stack
-
-### Port Configuration
-
-Ports are configurable via environment variables:
-
-- **Backend API**: Default port `18888` (configurable via `BACKEND_PORT` environment variable)
-- **Frontend UI**: Default port `8889` (configurable via `FRONTEND_PORT` environment variable)
-
-**To change ports**, set environment variables before running `docker-compose`:
-
-```bash
-export FRONTEND_PORT=3000
-export BACKEND_PORT=8000
-docker-compose up -d --build
-```
-
-Or set them in Portainer's environment variables section when deploying.
-
-### Docker Commands
-
-```bash
-# Start services
+# Start the application
 docker-compose up -d
 
 # View logs
 docker-compose logs -f
-
-# Stop services
-docker-compose down
-
-# Rebuild after code changes
-docker-compose up -d --build
 ```
 
-For detailed Docker deployment instructions, see [docs/DOCKER.md](docs/DOCKER.md).
+## First-Time Setup
 
-For testing instructions, see [docs/TESTING.md](docs/TESTING.md).
+When you first access the web UI, you'll see a setup wizard:
 
-## API Endpoints
+1. **Create Admin Account**: Set your username and password for the web interface
+2. **Synology Authentication**: The app will authenticate with your NAS using the credentials from environment variables
+3. **OTP (if enabled)**: If you have 2FA enabled on your NAS, you'll be prompted for an OTP code once
 
-### Authentication
-
-**Web UI Authentication:**
-
-- `POST /auth/login` - Login to web UI (username/password)
-- `POST /auth/logout` - Logout from web UI
-- `GET /auth/me` - Check current authentication status
-- `POST /auth/change-password` - Change web UI password
-
-**Synology NAS Authentication:**
-
-- `POST /auth/first-login` - Perform first-time authentication with optional OTP (see [First Login Setup](#first-login-setup))
-
-### Rules Management
-
-- `GET /rules` - List all reverse proxy rules
-- `GET /rules/{rule_id}` - Get a single rule by ID
-- `POST /rules` - Create a new rule
-- `PUT /rules/{rule_id}` - Update an existing rule
-- `DELETE /rules/{rule_id}` - Delete a rule
-- `POST /rules/export` - Export all rules as JSON
-- `POST /rules/import` - Import rules from JSON
-- `POST /create` - Legacy endpoint (backward compatibility)
-
-## Authentication Flow
-
-### First Login Setup
-
-After deploying the application (especially with Docker), you need to perform an initial authentication. This is a **one-time setup** that establishes a device token for future logins.
-
-**Recommended Method: Use the `/auth/first-login` API endpoint**
-
-This method is preferred because:
-
-- OTP codes expire quickly (30-60 seconds), making environment variables impractical
-- Works for both 2FA-enabled and non-2FA users
-- No container restart needed
-- Better error messages
-
-**Option 1: Using the Interactive API Docs (Easiest - Recommended)**
-
-No command line needed! Just use your browser:
-
-1. Open `http://your-nas-ip:18888/docs` in your browser (or custom port if `BACKEND_PORT` is set)
-2. Find the `/auth/first-login` endpoint
-3. Click "Try it out"
-4. Enter your OTP code (if 2FA enabled) or leave empty: `{"otp_code": "123456"}` or `{}`
-5. Click "Execute"
-6. Check the response for success
-
-**Option 2: Using curl (Command Line)**
-
-Only if you prefer command line:
-
-**For users with 2FA enabled:**
-
-```bash
-curl -X POST http://your-nas-ip:18888/auth/first-login \
-  -H "Content-Type: application/json" \
-  -d '{"otp_code": "123456"}'
-```
-
-(Replace `18888` with your custom `BACKEND_PORT` if set)
-
-**For users without 2FA:**
-
-```bash
-curl -X POST http://your-nas-ip:18888/auth/first-login \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
-
-(Replace `18888` with your custom `BACKEND_PORT` if set)
-
-**Alternative: Environment Variable Method**
-
-You can also set `SYNOLOGY_OTP_CODE` in environment variables, but this is less convenient due to OTP expiration.
-
-### Authentication Flow Details
-
-1. **First Login**:
-
-   - Requires: Username + Password + OTP code (if 2FA enabled)
-   - Uses OTP code from API endpoint or environment variables
-   - Enables device token (`enable_device_token=yes`)
-   - Stores device ID (DID) for future logins
-
-2. **Subsequent Logins**:
-
-   - Requires: Username + Password + Device ID
-   - Uses stored device ID to skip OTP requirement
-   - **Note**: Password is still required - device token only eliminates OTP
-   - Automatically renews session when expired
-   - Maintains CSRF token (SynoToken) for security
-
-3. **Session Management**:
-   - Sessions are encrypted and stored locally
-   - Automatic validation and renewal
-   - 6-day default expiry (configurable)
-
-## Security Features
-
-- ✅ **Web UI Authentication**: Username/password protection for the web application
-- ✅ **Session Management**: HTTP-only cookies with configurable expiry
-- ✅ **Remember Me**: Optional 30-day sessions for convenience
-- ✅ **Password Management**: Change password functionality
-- ✅ Environment variable configuration (no hardcoded credentials)
-- ✅ Encrypted session storage
-- ✅ CSRF protection with SynoToken
-- ✅ Device token authentication (reduces OTP friction)
-- ✅ Secure session validation
-
-## Project Structure
-
-```
-SynoReverseProxy/
-├── backend/                # Backend Python application
-│   ├── app/                # Main application package
-│   │   ├── main.py        # FastAPI app initialization
-│   │   ├── api/           # API routes
-│   │   │   ├── dependencies.py
-│   │   │   └── routes/
-│   │   │       ├── rules.py
-│   │   │       └── import_export.py
-│   │   ├── core/          # Core business logic
-│   │   │   ├── config.py
-│   │   │   ├── synology.py
-│   │   │   └── auth.py
-│   │   ├── models/        # Pydantic models
-│   │   │   └── schemas.py
-│   │   └── utils/         # Utilities
-│   │       └── encryption.py
-│   └── requirements.txt
-├── frontend/              # React frontend application
-│   ├── src/
-│   │   ├── App.js
-│   │   └── App.css
-│   └── package.json
-├── scripts/               # Utility scripts
-│   ├── start.sh
-│   └── stop.sh
-├── config/                # Configuration files
-│   ├── .env.example
-│   └── .env               # (not in git)
-├── data/                  # Runtime data (not in git)
-│   ├── syno_key.key
-│   └── syno_session.json.enc
-├── logs/                  # Log files (not in git)
-│   ├── backend.log
-│   └── frontend.log
-├── samples/               # Sample/test files
-└── README.md
-```
+After setup, you can log in with your admin credentials.
 
 ## Configuration
 
-### Environment Variables
+### Required Environment Variables
 
-| Variable                       | Required | Description                         | Default           |
-| ------------------------------ | -------- | ----------------------------------- | ----------------- |
-| **Synology NAS Configuration** |
-| `SYNOLOGY_NAS_URL`             | Yes      | Your NAS URL (http://ip:port)       | -                 |
-| `SYNOLOGY_USERNAME`            | Yes      | DSM username                        | -                 |
-| `SYNOLOGY_PASSWORD`            | Yes      | DSM password                        | -                 |
-| `SYNOLOGY_OTP_CODE`            | No\*     | 2FA OTP code (first login only)     | -                 |
-| `SYNOLOGY_DEVICE_NAME`         | No       | Device identifier                   | Hostname          |
-| `SYNOLOGY_SESSION_EXPIRY_SECS` | No       | Session expiry in seconds           | 518400 (6 days)   |
-| **Web UI Authentication**      |
-| `APP_USERNAME`                 | No       | Web UI username                     | admin             |
-| `APP_PASSWORD`                 | No       | Web UI password                     | admin\*\*         |
-| `APP_SESSION_SECRET_KEY`       | No       | Session secret key (auto-generated) | auto-generated    |
-| `APP_SESSION_EXPIRY_SECS`      | No       | Web session expiry (seconds)        | 3600 (1 hour)     |
-| `APP_REMEMBER_ME_EXPIRY_SECS`  | No       | Remember me expiry (seconds)        | 2592000 (30 days) |
-| **Port Configuration**         |
-| `BACKEND_PORT`                 | No       | Backend API port                    | 18888             |
-| `FRONTEND_PORT`                | No       | Frontend web port                   | 8889              |
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `SYNOLOGY_NAS_URL` | Your NAS URL with protocol and port | `http://192.168.1.100:5000` |
+| `SYNOLOGY_USERNAME` | DSM username with admin privileges | `admin` |
+| `SYNOLOGY_PASSWORD` | DSM password | `your_password` |
 
-\* OTP code is only needed for the first login. After device token is obtained, it's not required. **Note**: Password is always required - device token only skips OTP, not password. **Recommended**: Use the `/auth/first-login` API endpoint instead of setting this environment variable (see [First Login Setup](#first-login-setup)).
+### Optional Environment Variables
 
-\*\* `APP_PASSWORD` defaults to `admin` if not set. **CHANGE THIS IN PRODUCTION!** The default credentials are `admin/admin` for initial setup convenience, similar to Portainer, AdGuard, and other self-hosted applications.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `APP_USERNAME` | - | Pre-set web UI username (skips setup) |
+| `APP_PASSWORD` | - | Pre-set web UI password (skips setup) |
+| `SYNOLOGY_OTP_CODE` | - | OTP code for first login (not recommended) |
+| `SYNOLOGY_SSL_VERIFY` | `true` | Verify SSL certificates |
+| `BACKEND_PORT` | `18888` | Backend API port |
+| `FRONTEND_PORT` | `8889` | Frontend web UI port |
+
+### Port Configuration
+
+To change the default ports, set environment variables before deploying:
+
+```yaml
+environment:
+  - BACKEND_PORT=8000
+  - FRONTEND_PORT=3000
+```
+
+Or in Portainer, add these to the environment variables section.
+
+## Authentication
+
+### Web UI Authentication
+
+The web UI requires a username and password. You can:
+
+1. **Set via environment variables** (recommended for automation):
+   ```yaml
+   environment:
+     - APP_USERNAME=admin
+     - APP_PASSWORD=your_secure_password
+   ```
+
+2. **Use the setup wizard** (recommended for manual deployment):
+   - Leave `APP_USERNAME` and `APP_PASSWORD` unset
+   - Access the web UI
+   - Complete the setup form
+
+### Synology NAS Authentication
+
+The app authenticates with your NAS using:
+- Username and password (always required)
+- Device token (generated after first login, eliminates OTP requirement)
+
+**First Login with 2FA:**
+
+If you have 2FA enabled on your NAS:
+
+1. Access the web UI and log in with your admin credentials
+2. If prompted, use the API docs at `http://your-nas-ip:18888/docs`
+3. Find `/auth/first-login` endpoint
+4. Click "Try it out" and enter your OTP code
+5. Execute the request
+
+After this, the device token is saved and OTP won't be required again.
+
+## API Documentation
+
+Interactive API documentation is available at:
+- Swagger UI: `http://your-nas-ip:18888/docs`
+- ReDoc: `http://your-nas-ip:18888/redoc`
 
 ## Troubleshooting
 
-### Authentication Issues
+### Cannot access web UI
 
-- **"Login failed"**: Check your credentials. If using 2FA, ensure OTP code is correct and not expired
-- **"2FA authentication required"**: Your account has 2FA enabled. Call `/auth/first-login` with an OTP code
-- **"No valid session or device token found"**: You need to call `/auth/first-login` first (see [First Login Setup](#first-login-setup))
-- **"Session expired"**: The app will automatically renew, but check network connectivity
-- **"Device token not working"**: Delete `data/syno_session.json.enc` and call `/auth/first-login` again
+- Check that containers are running: `docker-compose ps`
+- Verify ports are not in use: `netstat -tuln | grep 8889`
+- Check logs: `docker-compose logs frontend`
 
-### Password Recovery (Web UI)
+### Authentication errors
 
-If you've forgotten your web UI password:
+- Verify `SYNOLOGY_NAS_URL` is correct and accessible
+- Check DSM credentials are valid
+- For 2FA users, complete first login via `/auth/first-login` endpoint
 
-1. **Stop the backend server**
-2. **Delete the authentication file**:
-   ```bash
-   rm config/.web_auth.json
-   ```
-3. **Restart the backend server** - It will recreate credentials with default `admin/admin`
-4. **Log in with default credentials** (`admin/admin`)
-5. **Change your password** via the web UI (Change Password button in header)
+### "Setup required" page won't go away
 
-**Security Note**: This requires server access. In production, ensure proper access controls are in place.
+- Ensure `APP_USERNAME` and `APP_PASSWORD` are set if you want to skip setup
+- Or complete the setup form to create your admin account
+- Check backend logs: `docker-compose logs backend`
 
-### API Issues
+### Password recovery
 
-- **CORS errors**: Ensure backend is running and CORS is configured
-- **404 errors**: Check that the API endpoint URLs are correct
-- **500 errors**: Check backend logs for detailed error messages
+If you forget your web UI password:
 
-### Frontend Issues
+```bash
+# Stop the backend
+docker-compose stop backend
 
-- **Rules not loading**: Verify backend is running on port 8000
-- **Form not submitting**: Check browser console for errors
-- **Styling issues**: Clear browser cache and rebuild
+# Remove the auth file
+docker-compose exec backend rm /app/config/.web_auth.json
+
+# Restart the backend
+docker-compose start backend
+
+# Access the web UI - setup wizard will appear
+```
+
+## Updating
+
+```bash
+# Pull latest images
+docker-compose pull
+
+# Recreate containers
+docker-compose up -d
+
+# Remove old images
+docker image prune -f
+```
 
 ## Development
 
-### Backend Development
+For local development without Docker:
+
+### Backend
 
 ```bash
 cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
 
-### Frontend Development
+### Frontend
 
 ```bash
 cd frontend
+npm install
 npm start
 ```
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines.
+
+## Security
+
+- Web UI credentials are hashed with bcrypt
+- Synology sessions are encrypted and stored locally
+- HTTPS support via reverse proxy (nginx recommended)
+- Rate limiting on login attempts
+- CSRF protection with SynoToken
+
+For security issues, see [docs/SECURITY.md](docs/SECURITY.md).
+
 ## License
 
-This project is provided as-is for managing Synology reverse proxy rules.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting pull requests.
 
-## Security Notes
+## Support
 
-- Never commit `.env` files
-- Rotate credentials regularly
-- Use strong passwords
-- Enable 2FA on your Synology NAS
-- Keep dependencies updated
-
-## Changelog
-
-### Version 2.0 (Current)
-
-- ✅ Upgraded to API v6 with device tokens
-- ✅ Added SynoToken CSRF protection
-- ✅ Environment variable configuration
-- ✅ Modern React UI with full CRUD
-- ✅ Search and filter functionality
-- ✅ Responsive design
-- ✅ Improved error handling
-
-### Version 1.0
-
-- Basic authentication with API v3
-- Simple create/list functionality
-- Basic React UI
+- Documentation: [docs/](docs/)
+- Issues: [GitHub Issues](https://github.com/devwareh/SynoReverseProxy/issues)
+- Discussions: [GitHub Discussions](https://github.com/devwareh/SynoReverseProxy/discussions)
