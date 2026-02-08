@@ -1,5 +1,10 @@
 # Synology Reverse Proxy Manager
 
+[![CI](https://github.com/devwareh/SynoReverseProxy/actions/workflows/ci.yml/badge.svg)](https://github.com/devwareh/SynoReverseProxy/actions/workflows/ci.yml)
+[![Docker](https://github.com/devwareh/SynoReverseProxy/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/devwareh/SynoReverseProxy/actions/workflows/docker-publish.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub release](https://img.shields.io/github/v/release/devwareh/SynoReverseProxy)](https://github.com/devwareh/SynoReverseProxy/releases)
+
 A modern web application for managing reverse proxy rules on Synology NAS devices. Features secure authentication with device tokens, CSRF protection, and a beautiful, responsive UI with full CRUD operations.
 
 ## Features
