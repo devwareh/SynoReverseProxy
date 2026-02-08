@@ -60,7 +60,8 @@ def get_new_session(device_id: Optional[str] = None, otp_code: Optional[str] = N
     
     data = result["data"]
     sid = data["sid"]
-    did = data.get("did")
+    # If API returns a new DID, use it. Otherwise, keep the one we used to login.
+    did = data.get("did") or device_id
     synotoken = data.get("synotoken")
     expiry_time = time.time() + settings.synology_session_expiry_secs
     

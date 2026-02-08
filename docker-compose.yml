@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    image: ghcr.io/devwareh/syno-reverse-proxy-backend:v1.0.0
+    image: ghcr.io/devwareh/syno-reverse-proxy-backend:latest
     # Uncomment below to build from source instead of using published image
     # build:
     #   context: ./backend
@@ -54,7 +54,7 @@ services:
       - syno-network
 
   frontend:
-    image: ghcr.io/devwareh/syno-reverse-proxy-frontend:v1.0.0
+    image: ghcr.io/devwareh/syno-reverse-proxy-frontend:latest
     # Uncomment below to build from source instead of using published image
     # build:
     #   context: ./frontend

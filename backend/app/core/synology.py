@@ -1,18 +1,22 @@
 """Synology Reverse Proxy Manager - Core API interaction."""
 import json
+import logging
 import requests
 from typing import Optional, List, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 
 class SynoReverseProxyManager:
     """Manager for interacting with Synology Reverse Proxy API."""
     
-    def __init__(self, nas_url: str, sid: str, synotoken: Optional[str] = None, session=None):
+    def __init__(self, nas_url: str, sid: str, synotoken: Optional[str] = None, session=None, ssl_verify: bool = True):
         self.nas_url = nas_url.rstrip('/')
         self.sid = sid
         self.synotoken = synotoken
         self.session = session or requests.Session()
         self.api_url = f"{self.nas_url}/webapi/entry.cgi"
+        self.ssl_verify = ssl_verify
     
     def _get_params(self, **kwargs) -> Dict[str, Any]:
         """Build API parameters with SID and optional SynoToken."""
@@ -28,7 +32,7 @@ class SynoReverseProxyManager:
             method="list",
             version="1"
         )
-        resp = self.session.get(self.api_url, params=payload, verify=False)
+        resp = self.session.get(self.api_url, params=payload, verify=self.ssl_verify)
         resp.raise_for_status()
         return resp.json()
 
@@ -47,7 +51,7 @@ class SynoReverseProxyManager:
                     version="1",
                     **{param_name: rule_id}
                 )
-                resp = self.session.get(self.api_url, params=payload, verify=False)
+                resp = self.session.get(self.api_url, params=payload, verify=self.ssl_verify)
                 resp.raise_for_status()
                 result = resp.json()
                 if result.get("success"):
@@ -87,7 +91,7 @@ class SynoReverseProxyManager:
             version="1"
         )
         data = {"entry": json.dumps(rule_dict)}
-        resp = self.session.post(self.api_url, params=params, data=data, verify=False)
+        resp = self.session.post(self.api_url, params=params, data=data, verify=self.ssl_verify)
         resp.raise_for_status()
         return resp.json()
     
@@ -109,8 +113,8 @@ class SynoReverseProxyManager:
         
         existing_entry = existing_rule.get("data", {}).get("entry", {})
         
-        # Debug: log what fields are available
-        print(f"DEBUG: Available fields in entry: {list(existing_entry.keys())}")
+        # Log available fields for debugging
+        logger.debug(f"Available fields in entry: {list(existing_entry.keys())}")
         
         # Try different possible field names for _key
         _key = existing_entry.get("_key") or existing_entry.get("key") or existing_entry.get("_uuid")
@@ -121,7 +125,7 @@ class SynoReverseProxyManager:
             # Some Synology APIs use UUID as the key identifier
             # Try using the UUID itself as _key
             _key = existing_entry.get("UUID") or existing_entry.get("uuid") or rule_id
-            print(f"DEBUG: Using UUID as _key fallback: {_key}")
+            logger.debug(f"Using UUID as _key fallback: {_key}")
         
         # Final check - if still no _key, return detailed error
         if not _key:
@@ -139,7 +143,7 @@ class SynoReverseProxyManager:
         rule_dict_with_uuid["_key"] = _key
         
         data = {"entry": json.dumps(rule_dict_with_uuid)}
-        resp = self.session.post(self.api_url, params=params, data=data, verify=False)
+        resp = self.session.post(self.api_url, params=params, data=data, verify=self.ssl_verify)
         resp.raise_for_status()
         return resp.json()
     
@@ -158,7 +162,7 @@ class SynoReverseProxyManager:
         # The uuids parameter should be a JSON string of an array
         data = {"uuids": json.dumps(rule_ids)}
         
-        resp = self.session.post(self.api_url, params=params, data=data, verify=False)
+        resp = self.session.post(self.api_url, params=params, data=data, verify=self.ssl_verify)
         resp.raise_for_status()
         result = resp.json()
         return result

@@ -79,6 +79,7 @@ def get_mgr() -> SynoReverseProxyManager:
     return SynoReverseProxyManager(
         settings.synology_nas_url, 
         session_data['sid'], 
-        synotoken=session_data.get('synotoken')
+        synotoken=session_data.get('synotoken'),
+        ssl_verify=settings.synology_ssl_verify
     )
 

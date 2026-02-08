@@ -205,7 +205,7 @@ def first_login(request: FirstLoginRequest):
                     detail={
                         "success": False,
                         "error": "Authentication failed",
-                        "message": f"Login failed: {str(login_error)}. If your account has 2FA enabled, please provide an OTP code. Otherwise, verify your username and password.",
+                        "message": "Login failed. If your account has 2FA enabled, please provide an OTP code. Otherwise, verify your username and password.",
                         "requires_otp": None  # Unknown, but suggest trying with OTP
                     }
                 )
@@ -249,7 +249,7 @@ def get_new_session_with_otp(otp_code: Optional[str] = None) -> dict:
     
     import requests
     session = requests.Session()
-    resp = session.get(login_url, params=params, verify=False)
+    resp = session.get(login_url, params=params, verify=settings.synology_ssl_verify)
     resp.raise_for_status()
     result = resp.json()
     
