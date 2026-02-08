@@ -42,6 +42,13 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 
+class SetupRequest(BaseModel):
+    """Request model for first-run setup."""
+    username: Optional[str] = None
+    password: str
+    confirm_password: str
+
+
 @router.post("/first-login")
 def first_login(request: FirstLoginRequest):
     """
@@ -464,3 +471,98 @@ def change_password(
         "message": "Password changed successfully. Please log in again."
     }
 
+
+@router.get("/setup/check")
+def check_setup():
+    """Check if first-run setup is required.
+    
+    Returns setup status and what needs to be configured.
+    """
+    from app.core.setup import is_setup_required
+    
+    setup_info = is_setup_required()
+    
+    return {
+        "success": True,
+        "setup_required": setup_info["required"],
+        "needs_username": setup_info["needs_username"],
+        "needs_password": setup_info["needs_password"],
+        "default_username": setup_info.get("env_username", "admin")
+    }
+
+
+@router.post("/setup/complete")
+def complete_setup(request: SetupRequest):
+    """Complete first-run setup by creating admin credentials.
+    
+    This endpoint is only available when setup is required.
+    """
+    from app.core.setup import is_setup_required, complete_setup
+    
+    # Check if setup is actually required
+    setup_info = is_setup_required()
+    
+    if not setup_info["required"]:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": "Setup not required",
+                "message": "Admin account already exists."
+            }
+        )
+    
+    # Validate passwords match
+    if request.password != request.confirm_password:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": "Password mismatch",
+                "message": "Passwords do not match."
+            }
+        )
+    
+    # Validate password length
+    if len(request.password) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": "Invalid password",
+                "message": "Password must be at least 8 characters long."
+            }
+        )
+    
+    # Validate username if needed
+    if setup_info["needs_username"]:
+        if not request.username or len(request.username) < 3:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "success": False,
+                    "error": "Invalid username",
+                    "message": "Username must be at least 3 characters long."
+                }
+            )
+    
+    # Complete setup
+    try:
+        complete_setup(
+            username=request.username,
+            password=request.password
+        )
+        
+        return {
+            "success": True,
+            "message": "Setup completed successfully. You can now log in."
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": "Setup failed",
+                "message": str(e)
+            }
+        )

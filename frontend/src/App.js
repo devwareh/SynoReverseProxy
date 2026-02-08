@@ -13,6 +13,7 @@ import { ToastContainer } from "./components/notifications";
 import { EmptyState, LoadingState } from "./components/empty-states";
 import Notification from "./components/notifications/Notification/Notification";
 import Login from "./components/auth/Login/Login";
+import Setup from "./components/auth/Setup/Setup";
 import ChangePassword from "./components/auth/ChangePassword/ChangePassword";
 import useKeyboardShortcuts from "./hooks/useKeyboardShortcuts";
 import "./App.css";
@@ -24,7 +25,7 @@ const ConfirmDialog = lazy(() => import("./components/modals/ConfirmDialog/Confi
 
 function App() {
   // Authentication
-  const { isAuthenticated, loading: authLoading, user, logout } = useAuth();
+  const { isAuthenticated, loading: authLoading, user, logout, setupRequired, checkSetupAndAuth } = useAuth();
   // Use custom hooks
   const {
     rules,
@@ -79,12 +80,12 @@ function App() {
         }
       );
     }
-    
+
     // Then sort
     const sorted = [...filtered].sort((a, b) => {
       let aValue = "";
       let bValue = "";
-      
+
       switch (sortBy) {
         case "description":
           aValue = (a.description || "").toLowerCase();
@@ -101,12 +102,12 @@ function App() {
         default:
           return 0;
       }
-      
+
       if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
       if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
       return 0;
     });
-    
+
     return sorted;
   }, [rules, searchTerm, sortBy, sortOrder]);
 
@@ -383,6 +384,16 @@ function App() {
     );
   }
 
+  // Show setup page if required
+  if (setupRequired) {
+    return (
+      <>
+        <SkipLink />
+        <Setup onComplete={() => checkSetupAndAuth()} />
+      </>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <>
@@ -396,8 +407,8 @@ function App() {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <SkipLink targetId="main-content" />
       <Container>
-        <Header 
-          title="Synology Reverse Proxy Manager" 
+        <Header
+          title="Synology Reverse Proxy Manager"
           subtitle={`Manage your reverse proxy rules${user ? ` • Logged in as ${user}` : ''}`}
           rightActions={
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -422,216 +433,216 @@ function App() {
             </div>
           }
         />
-        
+
         <main id="main-content" className="app-content" role="main" aria-live="polite" aria-atomic="false">
-        <ToastContainer notifications={notifications} onClose={removeNotification} />
-        
-        {rulesError && !rulesError.includes("authentication") && (
-          <Notification message={rulesError} type="error" />
-        )}
+          <ToastContainer notifications={notifications} onClose={removeNotification} />
 
-        {/* First Login Modal */}
-        {showFirstLogin && (
-          <Suspense fallback={<LoadingState message="Loading..." />}>
-            <Modal
-              isOpen={showFirstLogin}
-              onClose={() => setShowFirstLogin(false)}
-              title={
-                <>
-                  <FiShield /> First-Time Setup Required
-                </>
-              }
-              footer={
-                <>
-                  <Button variant="secondary" onClick={() => setShowFirstLogin(false)} disabled={firstLoginLoading}>
-                    Cancel
-                  </Button>
-                  <Button variant="primary" onClick={handleFirstLogin} loading={firstLoginLoading}>
-                    Authenticate
-                  </Button>
-                </>
-              }
-            >
-              <p>This is your first time using the application. You need to perform an initial authentication to establish a device token.</p>
-              <p className="modal-note-text">
-                <strong>Note:</strong> If your Synology account has 2FA enabled, you'll need to provide an OTP code. Otherwise, you can leave it empty.
-              </p>
-              <Input
-                label="OTP Code (Optional - only if 2FA is enabled)"
-                id="otp-code"
-                type="text"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                placeholder="Enter 6-digit OTP code (or leave empty if no 2FA)"
-                maxLength={6}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter" && !firstLoginLoading) {
-                    handleFirstLogin();
-                  }
-                }}
+          {rulesError && !rulesError.includes("authentication") && (
+            <Notification message={rulesError} type="error" />
+          )}
+
+          {/* First Login Modal */}
+          {showFirstLogin && (
+            <Suspense fallback={<LoadingState message="Loading..." />}>
+              <Modal
+                isOpen={showFirstLogin}
+                onClose={() => setShowFirstLogin(false)}
+                title={
+                  <>
+                    <FiShield /> First-Time Setup Required
+                  </>
+                }
+                footer={
+                  <>
+                    <Button variant="secondary" onClick={() => setShowFirstLogin(false)} disabled={firstLoginLoading}>
+                      Cancel
+                    </Button>
+                    <Button variant="primary" onClick={handleFirstLogin} loading={firstLoginLoading}>
+                      Authenticate
+                    </Button>
+                  </>
+                }
+              >
+                <p>This is your first time using the application. You need to perform an initial authentication to establish a device token.</p>
+                <p className="modal-note-text">
+                  <strong>Note:</strong> If your Synology account has 2FA enabled, you'll need to provide an OTP code. Otherwise, you can leave it empty.
+                </p>
+                <Input
+                  label="OTP Code (Optional - only if 2FA is enabled)"
+                  id="otp-code"
+                  type="text"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  placeholder="Enter 6-digit OTP code (or leave empty if no 2FA)"
+                  maxLength={6}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && !firstLoginLoading) {
+                      handleFirstLogin();
+                    }
+                  }}
+                />
+              </Modal>
+            </Suspense>
+          )}
+
+          {/* Confirm Dialog */}
+          {confirmDialog && (
+            <Suspense fallback={null}>
+              <ConfirmDialog
+                isOpen={confirmDialog.isOpen}
+                onClose={() => setConfirmDialog(null)}
+                onConfirm={confirmDialog.onConfirm}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                variant="danger"
               />
-            </Modal>
-          </Suspense>
-        )}
+            </Suspense>
+          )}
 
-        {/* Confirm Dialog */}
-        {confirmDialog && (
+          {/* Change Password Modal */}
           <Suspense fallback={null}>
-            <ConfirmDialog
-              isOpen={confirmDialog.isOpen}
-              onClose={() => setConfirmDialog(null)}
-              onConfirm={confirmDialog.onConfirm}
-              title={confirmDialog.title}
-              message={confirmDialog.message}
-              variant="danger"
+            <ChangePassword
+              isOpen={showChangePassword}
+              onClose={() => setShowChangePassword(false)}
             />
           </Suspense>
-        )}
 
-        {/* Change Password Modal */}
-        <Suspense fallback={null}>
-          <ChangePassword
-            isOpen={showChangePassword}
-            onClose={() => setShowChangePassword(false)}
+          <Toolbar
+            left={
+              <>
+                {selectedRules.size > 0 ? (
+                  <>
+                    <Button variant="secondary" onClick={clearSelection} ariaLabel="Clear selection">
+                      <FiX /> Clear Selection
+                    </Button>
+                    <span className="selection-count">{selectedRules.size} selected</span>
+                    <Button variant="danger" onClick={handleBulkDelete} disabled={loading} ariaLabel={`Delete ${selectedRules.size} selected rule(s)`}>
+                      <FiTrash2 /> Delete Selected ({selectedRules.size})
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="primary" onClick={() => { resetForm(); setShowForm(!showForm); }}>
+                      {showForm ? <><FiX /> Cancel</> : <><FiPlus /> Create New Rule</>}
+                    </Button>
+                    <Button variant="secondary" onClick={handleExport} disabled={loading || rules.length === 0} ariaLabel="Export all rules to JSON">
+                      <FiDownload /> Export
+                    </Button>
+                    <label className="btn btn-secondary file-input-wrapper">
+                      <FiUpload /> Import
+                      <input type="file" accept=".json" onChange={handleImport} disabled={loading} />
+                    </label>
+                  </>
+                )}
+              </>
+            }
+            right={
+              <div className="search-box">
+                <FiSearch className="search-icon" aria-hidden="true" />
+                <input
+                  type="text"
+                  placeholder="Search rules..."
+                  value={searchTerm || ""}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                  aria-label="Search rules"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-form-type="other"
+                />
+              </div>
+            }
           />
-        </Suspense>
 
-        <Toolbar
-          left={
-            <>
-              {selectedRules.size > 0 ? (
-                <>
-                  <Button variant="secondary" onClick={clearSelection} ariaLabel="Clear selection">
-                    <FiX /> Clear Selection
-                  </Button>
-                  <span className="selection-count">{selectedRules.size} selected</span>
-                  <Button variant="danger" onClick={handleBulkDelete} disabled={loading} ariaLabel={`Delete ${selectedRules.size} selected rule(s)`}>
-                    <FiTrash2 /> Delete Selected ({selectedRules.size})
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="primary" onClick={() => { resetForm(); setShowForm(!showForm); }}>
-                    {showForm ? <><FiX /> Cancel</> : <><FiPlus /> Create New Rule</>}
-                  </Button>
-                  <Button variant="secondary" onClick={handleExport} disabled={loading || rules.length === 0} ariaLabel="Export all rules to JSON">
-                    <FiDownload /> Export
-                  </Button>
-                  <label className="btn btn-secondary file-input-wrapper">
-                    <FiUpload /> Import
-                    <input type="file" accept=".json" onChange={handleImport} disabled={loading} />
-                  </label>
-                </>
-              )}
-            </>
-          }
-          right={
-            <div className="search-box">
-              <FiSearch className="search-icon" aria-hidden="true" />
-              <input
-                type="text"
-                placeholder="Search rules..."
-                value={searchTerm || ""}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input"
-                aria-label="Search rules"
-                autoComplete="off"
-                data-lpignore="true"
-                data-form-type="other"
+          {/* Rule Form */}
+          {showForm && (
+            <Suspense fallback={<LoadingState message="Loading form..." />}>
+              <RuleForm
+                fields={fields}
+                onChange={setFields}
+                onSubmit={handleSubmit}
+                onCancel={resetForm}
+                editingRule={editingRule}
+                loading={loading}
+                error={rulesError}
               />
-            </div>
-          }
-        />
+            </Suspense>
+          )}
 
-        {/* Rule Form */}
-        {showForm && (
-          <Suspense fallback={<LoadingState message="Loading form..." />}>
-            <RuleForm
-              fields={fields}
-              onChange={setFields}
-              onSubmit={handleSubmit}
-              onCancel={resetForm}
-              editingRule={editingRule}
-              loading={loading}
-              error={rulesError}
-            />
-          </Suspense>
-        )}
-
-        <div className="rules-section">
-          <div className="rules-section-header">
-            <h2>
-              <FiGlobe className="section-icon" /> Reverse Proxy Rules ({filteredRules.length})
-            </h2>
-            {filteredRules.length > 0 && (
-              <div className="rules-header-controls">
-                <div className="sort-controls-group">
-                  <span className="sort-label">Sort by:</span>
-                  <Select
-                    id="sort-by"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    options={[
-                      { value: "description", label: "Name" },
-                      { value: "frontend", label: "Frontend Domain" },
-                      { value: "backend", label: "Backend Domain" },
-                    ]}
-                    className="sort-select-inline"
-                  />
+          <div className="rules-section">
+            <div className="rules-section-header">
+              <h2>
+                <FiGlobe className="section-icon" /> Reverse Proxy Rules ({filteredRules.length})
+              </h2>
+              {filteredRules.length > 0 && (
+                <div className="rules-header-controls">
+                  <div className="sort-controls-group">
+                    <span className="sort-label">Sort by:</span>
+                    <Select
+                      id="sort-by"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      options={[
+                        { value: "description", label: "Name" },
+                        { value: "frontend", label: "Frontend Domain" },
+                        { value: "backend", label: "Backend Domain" },
+                      ]}
+                      className="sort-select-inline"
+                    />
+                    <Button
+                      variant="secondary"
+                      onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                      ariaLabel={`Sort ${sortOrder === "asc" ? "descending" : "ascending"}`}
+                      className="sort-order-btn"
+                    >
+                      {sortOrder === "asc" ? <FiArrowUp /> : <FiArrowDown />}
+                    </Button>
+                  </div>
                   <Button
-                    variant="secondary"
-                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                    ariaLabel={`Sort ${sortOrder === "asc" ? "descending" : "ascending"}`}
-                    className="sort-order-btn"
+                    variant={selectedRules.size === filteredRules.length && filteredRules.length > 0 ? "primary" : "secondary"}
+                    onClick={toggleSelectAll}
+                    disabled={loading}
+                    ariaLabel={selectedRules.size === filteredRules.length ? "Deselect all rules" : "Select all rules"}
+                    title={selectedRules.size === filteredRules.length ? "Deselect all" : "Select all"}
+                    className="select-all-btn"
                   >
-                    {sortOrder === "asc" ? <FiArrowUp /> : <FiArrowDown />}
+                    {selectedRules.size === filteredRules.length && filteredRules.length > 0 ? (
+                      <FiCheckCircle />
+                    ) : (
+                      <FiLayers />
+                    )}
                   </Button>
                 </div>
-                <Button
-                  variant={selectedRules.size === filteredRules.length && filteredRules.length > 0 ? "primary" : "secondary"}
-                  onClick={toggleSelectAll}
-                  disabled={loading}
-                  ariaLabel={selectedRules.size === filteredRules.length ? "Deselect all rules" : "Select all rules"}
-                  title={selectedRules.size === filteredRules.length ? "Deselect all" : "Select all"}
-                  className="select-all-btn"
-                >
-                  {selectedRules.size === filteredRules.length && filteredRules.length > 0 ? (
-                    <FiCheckCircle />
-                  ) : (
-                    <FiLayers />
-                  )}
-                </Button>
-              </div>
+              )}
+            </div>
+            {loading && !showForm ? (
+              <LoadingState message="Loading rules..." />
+            ) : filteredRules.length === 0 ? (
+              <EmptyState
+                icon={<FiGlobe />}
+                title={searchTerm ? "No rules match your search" : "No rules configured yet"}
+                message={searchTerm ? "Try adjusting your search terms" : "Create your first reverse proxy rule to get started"}
+                action={
+                  !searchTerm && (
+                    <Button variant="primary" onClick={() => { resetForm(); setShowForm(true); }}>
+                      <FiPlus /> Create New Rule
+                    </Button>
+                  )
+                }
+              />
+            ) : (
+              <RuleGrid
+                rules={filteredRules}
+                selectedRules={selectedRules}
+                onSelectRule={toggleRuleSelection}
+                onEditRule={handleEdit}
+                onDeleteRule={handleDelete}
+                onDuplicateRule={handleDuplicate}
+                loading={loading}
+                skeletonCount={6}
+              />
             )}
           </div>
-          {loading && !showForm ? (
-            <LoadingState message="Loading rules..." />
-          ) : filteredRules.length === 0 ? (
-            <EmptyState
-              icon={<FiGlobe />}
-              title={searchTerm ? "No rules match your search" : "No rules configured yet"}
-              message={searchTerm ? "Try adjusting your search terms" : "Create your first reverse proxy rule to get started"}
-              action={
-                !searchTerm && (
-                  <Button variant="primary" onClick={() => { resetForm(); setShowForm(true); }}>
-                    <FiPlus /> Create New Rule
-                  </Button>
-                )
-              }
-            />
-          ) : (
-            <RuleGrid
-              rules={filteredRules}
-              selectedRules={selectedRules}
-              onSelectRule={toggleRuleSelection}
-              onEditRule={handleEdit}
-              onDeleteRule={handleDelete}
-              onDuplicateRule={handleDuplicate}
-              loading={loading}
-              skeletonCount={6}
-            />
-          )}
-        </div>
         </main>
         <Footer />
       </Container>

@@ -15,11 +15,34 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [setupRequired, setSetupRequired] = useState(false);
 
-  // Check authentication status on mount
+  // Check authentication status and setup on mount
   useEffect(() => {
-    checkAuth();
+    checkSetupAndAuth();
   }, []);
+
+  const checkSetupAndAuth = async () => {
+    try {
+      // First check if setup is required
+      const setupResponse = await fetch('/auth/setup/check');
+      const setupData = await setupResponse.json();
+
+      if (setupData.setup_required) {
+        setSetupRequired(true);
+        setLoading(false);
+        return;
+      }
+
+      // Setup not required, check auth
+      setSetupRequired(false);
+      await checkAuth();
+    } catch (error) {
+      // If setup check fails, proceed to auth check
+      setSetupRequired(false);
+      await checkAuth();
+    }
+  };
 
   const checkAuth = async () => {
     try {
@@ -58,7 +81,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Error data:', error.response?.data);
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
-      
+
       // Handle network errors specifically
       if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
         // Network error - might be CORS or connection issue
@@ -77,19 +100,19 @@ export const AuthProvider = ({ children }) => {
           // Ignore check auth errors - will return error below
           console.error('Auth check after network error failed:', e);
         }
-        
+
         // Get the actual API base URL for better error message
         const apiUrl = API_BASE || 'http://localhost:8000';
-        return { 
-          success: false, 
-          error: `Network error. Please check if the backend server is running at ${apiUrl}.` 
+        return {
+          success: false,
+          error: `Network error. Please check if the backend server is running at ${apiUrl}.`
         };
       }
-      
-      const errorMessage = error.response?.data?.detail?.message || 
-                          error.response?.data?.message || 
-                          error.message ||
-                          'Login failed. Please check your credentials.';
+
+      const errorMessage = error.response?.data?.detail?.message ||
+        error.response?.data?.message ||
+        error.message ||
+        'Login failed. Please check your credentials.';
       return { success: false, error: errorMessage };
     }
   };
@@ -113,9 +136,9 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: false, error: response.data.message || 'Password change failed' };
     } catch (error) {
-      const errorMessage = error.response?.data?.detail?.message || 
-                          error.response?.data?.message || 
-                          'Password change failed. Please check your current password.';
+      const errorMessage = error.response?.data?.detail?.message ||
+        error.response?.data?.message ||
+        'Password change failed. Please check your current password.';
       return { success: false, error: errorMessage };
     }
   };
@@ -126,10 +149,12 @@ export const AuthProvider = ({ children }) => {
         user,
         isAuthenticated,
         loading,
+        setupRequired,
         login,
         logout,
         changePassword,
         checkAuth,
+        checkSetupAndAuth,
       }}
     >
       {children}

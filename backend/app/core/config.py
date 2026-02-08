@@ -64,11 +64,11 @@ class Settings:
         self.app_rate_limit_max_attempts = int(os.getenv('APP_RATE_LIMIT_MAX_ATTEMPTS', '5'))  # Max failed attempts
         self.app_rate_limit_window = int(os.getenv('APP_RATE_LIMIT_WINDOW', '300'))  # 5 minutes window
         
-        # Initialize web auth with provided password or default
-        from app.core.web_auth import initialize_web_auth
-        # Use provided password or default to 'admin' if not set
-        password_to_use = self.app_password if self.app_password else 'admin'
-        initialize_web_auth(self.app_username, password_to_use)
+        # Initialize web auth ONLY if both username and password are provided via env
+        # Otherwise, setup will be required on first run
+        if self.app_username and self.app_password:
+            from app.core.web_auth import initialize_web_auth
+            initialize_web_auth(self.app_username, self.app_password)
         
         # Validate required settings
         if not self.synology_username or not self.synology_password:
