@@ -37,12 +37,14 @@ ENV REACT_APP_API_PORT=$REACT_APP_API_PORT
 # Generate version.js from APP_VERSION build arg
 RUN if [ -n "$APP_VERSION" ]; then \
     echo "Using version from build arg: $APP_VERSION" && \
-    echo "export const APP_VERSION = \"$APP_VERSION\";" > src/utils/version.js && \
-    echo "" >> src/utils/version.js && \
-    echo "export const VERSION_INFO = {" >> src/utils/version.js && \
-    echo "  version: APP_VERSION," >> src/utils/version.js && \
-    echo "  buildDate: process.env.REACT_APP_BUILD_DATE || new Date().toISOString().split('T')[0]," >> src/utils/version.js && \
-    echo "};" >> src/utils/version.js; \
+    printf '%s\n' \
+    "export const APP_VERSION = \"$APP_VERSION\";" \
+    "" \
+    "export const VERSION_INFO = {" \
+    "  version: APP_VERSION," \
+    "  buildDate: process.env.REACT_APP_BUILD_DATE || new Date().toISOString().split('T')[0]," \
+    "};" \
+    > src/utils/version.js; \
     else \
     echo "No APP_VERSION provided, running sync-version script" && \
     (npm run sync-version || echo "Warning: sync-version failed, using existing version.js"); \
