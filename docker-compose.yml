@@ -41,11 +41,13 @@ services:
       - APP_RATE_LIMIT_ENABLED=${APP_RATE_LIMIT_ENABLED:-true}
       - APP_RATE_LIMIT_MAX_ATTEMPTS=${APP_RATE_LIMIT_MAX_ATTEMPTS:-5}
       - APP_RATE_LIMIT_WINDOW=${APP_RATE_LIMIT_WINDOW:-300}
+      # CORS Allowed Origins (comma-separated list of URLs)
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
       # Backend port (must match the port mapping above)
       - BACKEND_PORT=${BACKEND_PORT:-18888}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import requests; requests.get('http://localhost:$$BACKEND_PORT/', timeout=5)\""]
+      test: [ "CMD-SHELL", "python -c \"import requests; requests.get('http://localhost:$$BACKEND_PORT/', timeout=5)\"" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -66,6 +68,8 @@ services:
     container_name: syno-reverse-proxy-frontend
     ports:
       - "${FRONTEND_PORT:-8889}:${FRONTEND_PORT:-8889}"
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     environment:
       # Frontend nginx port (must match the port mapping above)
       - NGINX_PORT=${FRONTEND_PORT:-8889}
@@ -75,7 +79,7 @@ services:
       - backend
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:$$NGINX_PORT/ || exit 1"]
+      test: [ "CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:$$NGINX_PORT/ || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -86,4 +90,3 @@ services:
 networks:
   syno-network:
     driver: bridge
-
