@@ -15,7 +15,39 @@ A web application for managing reverse proxy rules on Synology NAS. Designed for
 - Full CRUD operations on proxy rules
 - Import/Export rules as JSON
 - Search and filter rules
+
 - Responsive design for mobile and desktop
+
+## Why use SynoReverseProxy?
+
+While Synology's built-in reverse proxy is powerful (powered by Nginx), the interface is designed for occasional configuration, not active management. SynoReverseProxy wraps the official Synology API in a modern, high-speed dashboard.
+
+
+| Feature | 🏛️ Synology Built-in UI | ⚡ SynoReverseProxy |
+| :--- | :--- | :--- |
+| **Engine** | Nginx (Native) | Nginx (Uses Native API) |
+| **Ease of Access** | ❌ **Heavy:** Must log into full DSM Desktop (slow load). | ✅ **Instant:** Dedicated lightweight web app. Mobile friendly. |
+| **Navigation** | ❌ **Manual:** You must type URL yourself to test. | ✅ **One-Click:** Direct "Open App" clickable pills for every rule. |
+| **Search & Find** | ⚠️ **Basic:** Simple text filter. | ✅ **Smart:** Real-time filtering by Name, Frontend Domain, or Backend Target. |
+| **Backup/Restore** | ❌ **Full System Only:** Can only backup *all* DSM settings. | ✅ **Granular:** Export *just* your proxy rules to JSON. Restore anywhere. |
+| **Workflow Speed** | ❌ **Slow:** Create New -> Type all 6 fields manually. | ✅ **Fast:** "Duplicate" button to clone an existing rule. |
+| **Bulk Actions** | ❌ **One by One:** Delete one at a time. | ✅ **Batch:** Select multiple rules -> Bulk Delete. |
+| **User Safety** | ⚠️ **High Risk:** Requires full Admin access to the entire NAS. | ✅ **Scoped:** Give a user access *only* to this app, keeping your NAS settings safe. |
+| **Validation** | ⚠️ **Post-Submit:** Tells you it failed *after* you save. | ✅ **Pre-Flight:** Checks for port conflicts *before* you submit. |
+
+## Pro Features
+
+### 🚀 One-Click Cloning
+Stop re-typing IP addresses and headers for every service in your stack. Just click **Duplicate** on an existing rule, tweak the subdomain/port, and save. Perfect for setting up *Arrs*, container stacks, or microservices.
+
+### 🧠 Smart Import/Export
+Migrating to a new NAS? Export your rules to a clean JSON file. The **Smart Import** feature is additive—it checks for conflicts and only adds new rules, preserving your existing configuration.
+
+### ⌨️ Power User Keybinds
+Manage your proxies without lifting your hands from the keyboard:
+- `Ctrl + K` / `Cmd + K`: Focus search bar
+- `Ctrl + N` / `Cmd + N`: Create new rule
+- `Esc`: Close modals
 
 ![Dashboard](docs/assets/screenshots/dashboard.png)
 
