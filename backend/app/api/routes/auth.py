@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, Response, Request, Cookie
 from pydantic import BaseModel
 from typing import Optional
-from app.core.auth import get_new_session, is_session_valid
+from app.core.auth import is_session_valid
 from app.core.config import get_settings
 from app.core.web_auth import (
     verify_web_credentials,
@@ -11,7 +11,6 @@ from app.core.web_auth import (
     get_session_username,
     delete_session,
     update_password,
-    initialize_web_auth,
     check_rate_limit,
     record_failed_attempt,
     clear_failed_attempts
@@ -64,8 +63,6 @@ def first_login(request: FirstLoginRequest):
         Success message with device token status
     """
     try:
-        settings = get_settings()
-        
         # Check if device token already exists
         existing_session = load_session()
         if existing_session and existing_session.get('did'):
@@ -103,7 +100,6 @@ def first_login(request: FirstLoginRequest):
             if "login failed" in error_str:
                 # Try to extract error details from the exception message
                 try:
-                    import json
                     import re
                     import ast
                     
@@ -194,14 +190,14 @@ def first_login(request: FirstLoginRequest):
                         "requires_otp": False,
                         "note": "OTP was provided but not required. Your account does not have 2FA enabled."
                     }
-                except Exception as retry_error:
+                except Exception:
                     # Both attempts failed - return generic error
                     raise HTTPException(
                         status_code=400,
                         detail={
                             "success": False,
                             "error": "Authentication failed",
-                            "message": f"Login failed with and without OTP. Please verify your credentials and OTP code if 2FA is enabled.",
+                            "message": "Login failed with and without OTP. Please verify your credentials and OTP code if 2FA is enabled.",
                             "requires_otp": None  # Unknown
                         }
                     )
@@ -354,7 +350,7 @@ def web_login(request: LoginRequest, response: Response, client_request: Request
         
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=500,
             detail={

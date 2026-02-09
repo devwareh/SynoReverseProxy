@@ -7,7 +7,7 @@ import { useAuth } from "./contexts/AuthContext";
 import { authAPI } from "./utils/api";
 import { DEFAULT_RULE_FIELDS } from "./utils/constants";
 import { Header, Container, Toolbar, Footer } from "./components/layout";
-import { Button, Input, Checkbox, SkipLink, Select } from "./components/common";
+import { Button, Input, SkipLink, Select } from "./components/common";
 import { RuleGrid } from "./components/rules";
 import { ToastContainer } from "./components/notifications";
 import { EmptyState, LoadingState } from "./components/empty-states";

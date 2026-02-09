@@ -1,6 +1,6 @@
 import React, { memo } from "react";
 import PropTypes from "prop-types";
-import { FiEdit2, FiTrash2, FiCopy, FiGlobe, FiServer, FiArrowRight, FiShield, FiClock, FiCode } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiCopy, FiShield } from "react-icons/fi";
 import Checkbox from "../../common/Checkbox/Checkbox";
 import Badge from "../../common/Badge/Badge";
 import Button from "../../common/Button/Button";

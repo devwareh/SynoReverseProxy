@@ -1,4 +1,4 @@
-"""FastAPI application entry point."""
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -17,7 +17,6 @@ app = FastAPI(
 # CORS middleware
 # When using credentials (cookies), we cannot use wildcard "*" for origins
 # We need to specify allowed origins explicitly
-import os
 
 # Check if we're in development mode
 is_development = os.getenv("ENVIRONMENT", "development").lower() != "production"
