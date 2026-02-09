@@ -29,20 +29,153 @@ A web application for managing reverse proxy rules on Synology NAS. Designed for
 
 ### Deployment
 
-#### Option 1: Portainer (Recommended)
+#### Option 1: Portainer (Recommended for Beginners)
 
-1. Open Portainer → **Stacks** → **Add Stack**
-2. Name your stack (e.g., `syno-reverse-proxy`)
-3. Paste the contents of `docker-compose.yml` from this repository
-4. Set environment variables:
+This guide walks you through the complete setup process step-by-step.
+
+**Step 1: Create Folders on Your NAS**
+
+1. Open **File Station** on your Synology NAS
+2. Navigate to `docker` folder in your main volume (usually `/volume1/docker/`)
+   - If it doesn't exist, create it: Right-click → **Create Folder** → Name it `docker`
+3. Inside `docker`, create a new folder: `SynoReverseProxy`
+4. Inside `SynoReverseProxy`, create three folders:
+   - `config`
+   - `data`
+   - `logs`
+
+Your folder structure should look like:
+```
+/volume1/docker/SynoReverseProxy/
+├── config/
+├── data/
+└── logs/
+```
+
+**Note:** If your main volume is not `volume1`, adjust the path accordingly (e.g., `/volume2/docker/`).
+
+**Step 2: Find Your User ID (PUID/PGID)**
+
+1. Open **Control Panel** → **Terminal & SNMP**
+2. Enable **SSH service**
+3. Connect via SSH (use Terminal on Mac/Linux, or PuTTY on Windows):
+   ```bash
+   ssh your_username@your-nas-ip
    ```
-   SYNOLOGY_NAS_URL=http://YOUR_NAS_IP:5000
-   SYNOLOGY_USERNAME=your_dsm_username
-   SYNOLOGY_PASSWORD=your_dsm_password
+4. Run this command:
+   ```bash
+   id
    ```
-5. Click **Deploy the stack**
-6. Access the web UI at `http://your-nas-ip:8889`
-   - You will be prompted to create your admin account on first login
+5. Note down your `uid` and `gid` numbers (example: `uid=1026 gid=100`)
+
+**Step 3: Install Portainer (if not already installed)**
+
+1. Open **Container Manager** on your Synology
+2. Go to **Registry** → Search for `portainer`
+3. Download `portainer/portainer-ce`
+4. Go to **Container** → **Create**
+5. Use these settings:
+   - Container Name: `portainer`
+   - Port: `9000:9000`
+   - Volume: `/var/run/docker.sock:/var/run/docker.sock`
+6. Click **Apply** and start the container
+7. Access Portainer at `http://your-nas-ip:9000`
+
+**Step 4: Deploy the Application in Portainer**
+
+1. Open Portainer at `http://your-nas-ip:9000`
+2. Click **Stacks** → **Add stack**
+3. Name it: `syno-reverse-proxy`
+4. Paste this docker-compose configuration:
+
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    image: ghcr.io/devwareh/syno-reverse-proxy-backend:latest
+    container_name: syno-reverse-proxy-backend
+    ports:
+      - "18888:18888"
+    volumes:
+      - /volume1/docker/SynoReverseProxy/data:/app/data
+      - /volume1/docker/SynoReverseProxy/logs:/app/logs
+      - /volume1/docker/SynoReverseProxy/config:/app/config
+    environment:
+      # Required: Your Synology NAS details
+      - SYNOLOGY_NAS_URL=http://192.168.1.100:5000
+      - SYNOLOGY_USERNAME=your_dsm_username
+      - SYNOLOGY_PASSWORD=your_dsm_password
+      
+      # Recommended: Set your user/group ID (from Step 2)
+      - PUID=1026
+      - PGID=100
+      
+      # Backend port
+      - BACKEND_PORT=18888
+    restart: unless-stopped
+    networks:
+      - syno-network
+
+  frontend:
+    image: ghcr.io/devwareh/syno-reverse-proxy-frontend:latest
+    container_name: syno-reverse-proxy-frontend
+    ports:
+      - "8889:8889"
+    environment:
+      - NGINX_PORT=8889
+      - BACKEND_PORT=18888
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - syno-network
+
+networks:
+  syno-network:
+    driver: bridge
+```
+
+5. **Important:** Update these values in the configuration:
+   - `SYNOLOGY_NAS_URL`: Your NAS IP and port (usually `:5000` or `:5001` for HTTPS)
+   - `SYNOLOGY_USERNAME`: Your DSM admin username
+   - `SYNOLOGY_PASSWORD`: Your DSM password
+   - `PUID`: Your user ID from Step 2
+   - `PGID`: Your group ID from Step 2
+   - **Volume paths**: If your docker folder is not at `/volume1/docker/`, update all three volume paths
+
+6. Click **Deploy the stack**
+
+**Step 5: Access the Web Interface**
+
+1. Wait 30 seconds for containers to start
+2. Open your browser and go to: `http://your-nas-ip:8889`
+3. You'll see a **Setup Wizard** on first visit
+4. Create your admin username and password
+5. Click **Complete Setup**
+6. Login with your new credentials
+
+**Step 6: Verify Everything Works**
+
+1. After logging in, you should see the dashboard
+2. Try creating a reverse proxy rule to test
+3. Check File Station - you should see files in `/docker/SynoReverseProxy/config/`
+4. If files are owned by your user (not root), PUID/PGID is working correctly! ✅
+
+**Troubleshooting:**
+
+- **Can't access the UI?** 
+  - Check if containers are running in Portainer
+  - Verify port 8889 is not blocked by firewall
+  
+- **Setup wizard keeps appearing?**
+  - Check if PUID/PGID is set correctly
+  - Verify folder permissions in File Station
+  
+- **Files owned by root?**
+  - You forgot to set PUID/PGID in Step 4
+  - Update the stack environment variables and redeploy
+
 
 
 #### Option 2: Synology Container Manager
@@ -144,7 +277,10 @@ By default, the container runs as root. For better security and easier file mana
 - Better security (container doesn't run as root)
 - Works with rootless Docker setups
 
-**Note:** If you don't set PUID/PGID, the container runs as root (works fine, just less secure).
+**Synology Users:**
+If you create the folders (`config/`, `data/`, `logs/`) in File Station before deploying, **setting PUID/PGID is highly recommended**. This ensures files created by the container match your folder ownership, allowing you to easily manage them in File Station without permission issues.
+
+**Note:** If you don't set PUID/PGID, the container runs as root (works fine, but files will be owned by root).
 
 
 ## Authentication
