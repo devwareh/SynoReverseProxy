@@ -39,6 +39,8 @@ A web application for managing reverse proxy rules on Synology NAS. Designed for
    ```
 5. Click **Deploy the stack**
 6. Access the web UI at `http://your-nas-ip:8889`
+   - You will be prompted to create your admin account on first login
+
 
 #### Option 2: Synology Container Manager
 
@@ -48,6 +50,8 @@ A web application for managing reverse proxy rules on Synology NAS. Designed for
 4. Set environment variables in the UI
 5. Click **Deploy**
 6. Access the web UI at `http://your-nas-ip:8889`
+   - You will be prompted to create your admin account on first login
+
 
 #### Option 3: Command Line
 
@@ -124,10 +128,11 @@ The web UI requires a username and password. You can:
      - APP_PASSWORD=your_secure_password
    ```
 
-2. **Use the setup wizard** (recommended for manual deployment):
+2. **Use the setup wizard** (default behavior):
    - Leave `APP_USERNAME` and `APP_PASSWORD` unset
    - Access the web UI
-   - Complete the setup form
+   - Complete the setup form to create your admin account
+
 
 ### Synology NAS Authentication
 

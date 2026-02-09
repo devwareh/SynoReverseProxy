@@ -10,12 +10,12 @@ Follow semantic versioning: MAJOR.MINOR.PATCH
 """
 
 # Application version
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 
 # Version metadata
 VERSION_INFO = {
     "version": APP_VERSION,
-    "api_version": "1.0.0",  # API version (may differ from app version)
+    "api_version": "1.0.1",  # API version (may differ from app version)
 }
 
 
