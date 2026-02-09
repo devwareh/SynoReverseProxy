@@ -8,8 +8,9 @@ from dotenv import load_dotenv
 
 # Load environment variables from config/.env
 # This must happen before Settings class is instantiated
-PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
-CONFIG_DIR = PROJECT_ROOT / "config"
+PROJECT_ROOT = Path(__file__).parent.parent.parent  # /app/app/core -> /app
+CONFIG_DIR = PROJECT_ROOT / "config"  # /app/config
+DATA_DIR = PROJECT_ROOT / "data"      # /app/data
 ENV_FILE = CONFIG_DIR / ".env"
 
 if ENV_FILE.exists():
@@ -95,8 +96,7 @@ def get_settings() -> Settings:
     return _settings
 
 
-# Get data and logs directories
-DATA_DIR = PROJECT_ROOT / "data"
+# Get logs directory
 LOGS_DIR = PROJECT_ROOT / "logs"
 
 # Ensure directories exist (handle permission errors gracefully)
