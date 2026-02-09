@@ -68,8 +68,7 @@ services:
     container_name: syno-reverse-proxy-frontend
     ports:
       - "${FRONTEND_PORT:-8889}:${FRONTEND_PORT:-8889}"
-    volumes:
-      - ./frontend/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+
     environment:
       # Frontend nginx port (must match the port mapping above)
       - NGINX_PORT=${FRONTEND_PORT:-8889}
