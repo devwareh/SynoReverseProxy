@@ -12,14 +12,15 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy VERSION file from project root
-COPY ../VERSION /app/../VERSION
-
 # Copy scripts directory (for sync-version.js)
 COPY scripts ./scripts
 
 # Copy source code
 COPY . .
+
+# Build argument for version (passed from CI/CD or defaults to package.json version)
+ARG APP_VERSION
+ENV APP_VERSION=${APP_VERSION}
 
 # Build argument for API URL
 # Note: In Docker, the browser (client-side) needs to access backend via host
@@ -33,8 +34,19 @@ ENV REACT_APP_API_URL=$REACT_APP_API_URL
 ARG REACT_APP_API_PORT=18888
 ENV REACT_APP_API_PORT=$REACT_APP_API_PORT
 
-# Sync version from VERSION file before building
-RUN npm run sync-version
+# Generate version.js from APP_VERSION build arg
+RUN if [ -n "$APP_VERSION" ]; then \
+    echo "Using version from build arg: $APP_VERSION" && \
+    echo "export const APP_VERSION = \"$APP_VERSION\";" > src/utils/version.js && \
+    echo "" >> src/utils/version.js && \
+    echo "export const VERSION_INFO = {" >> src/utils/version.js && \
+    echo "  version: APP_VERSION," >> src/utils/version.js && \
+    echo "  buildDate: process.env.REACT_APP_BUILD_DATE || new Date().toISOString().split('T')[0]," >> src/utils/version.js && \
+    echo "};" >> src/utils/version.js; \
+    else \
+    echo "No APP_VERSION provided, running sync-version script" && \
+    (npm run sync-version || echo "Warning: sync-version failed, using existing version.js"); \
+    fi
 
 # Build the React app
 RUN npm run build
