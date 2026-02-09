@@ -16,6 +16,9 @@ A web application for managing reverse proxy rules on Synology NAS. Designed for
 - Search and filter rules
 - Responsive design for mobile and desktop
 
+![Dashboard](docs/assets/screenshots/dashboard.png)
+
+![Edit Rule](docs/assets/screenshots/edit-rule.png)
 ## Quick Start
 
 ### Prerequisites
@@ -157,6 +160,22 @@ After this, the device token is saved and OTP won't be required again.
 Interactive API documentation is available at:
 - Swagger UI: `http://your-nas-ip:18888/docs`
 - ReDoc: `http://your-nas-ip:18888/redoc`
+
+## Backup & Restore
+
+You can back up your reverse proxy rules to a JSON file and restore them later.
+
+### Export (Backup)
+1. Navigate to the **Import/Export** page
+2. Click **Export Rules**
+3. A JSON file containing all your rules will be downloaded
+
+### Import (Restore)
+1. Navigate to the **Import/Export** page
+2. Paste your JSON content or upload the file
+3. Click **Import Rules**
+
+**Note:** The import process is **additive**. It will create new rules but will **skip** any rules that conflict with existing ones (same hostname and port). It acts as a "merge" operation and will not delete or overwrite your existing rules.
 
 ## Troubleshooting
 
