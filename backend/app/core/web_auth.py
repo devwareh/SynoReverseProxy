@@ -3,11 +3,9 @@ import bcrypt
 import secrets
 import time
 import json
-import os
-from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Dict, Any, Optional
 from collections import defaultdict
-from app.core.config import PROJECT_ROOT, CONFIG_DIR, DATA_DIR
+from app.core.config import CONFIG_DIR, DATA_DIR
 from app.utils.encryption import FERNET
 
 # Session storage (persisted to disk, encrypted)

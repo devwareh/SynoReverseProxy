@@ -3,7 +3,7 @@ import time
 import requests
 from typing import Optional, Dict, Any
 from app.core.config import get_settings
-from app.utils.encryption import save_session, load_session
+from app.utils.encryption import save_session
 
 
 def get_new_session(device_id: Optional[str] = None, otp_code: Optional[str] = None) -> Dict[str, Any]:
