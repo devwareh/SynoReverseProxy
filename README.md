@@ -105,6 +105,8 @@ After setup, you can log in with your admin credentials.
 | `SYNOLOGY_SSL_VERIFY` | `true` | Verify SSL certificates |
 | `BACKEND_PORT` | `18888` | Backend API port |
 | `FRONTEND_PORT` | `8889` | Frontend web UI port |
+| `PUID` | - | User ID for file ownership (optional) |
+| `PGID` | - | Group ID for file ownership (optional) |
 
 ### Port Configuration
 
@@ -117,6 +119,33 @@ environment:
 ```
 
 Or in Portainer, add these to the environment variables section.
+
+### File Ownership (PUID/PGID)
+
+By default, the container runs as root. For better security and easier file management, you can run the container as your user:
+
+1. **Find your user and group IDs:**
+   ```bash
+   id
+   # Output: uid=1000(username) gid=1000(groupname) ...
+   ```
+
+2. **Set PUID and PGID in your `.env` file:**
+   ```bash
+   PUID=1000
+   PGID=1000
+   ```
+
+3. **Restart the container**
+
+**Benefits:**
+- Files in `config/`, `data/`, and `logs/` owned by your user (not root)
+- Easier to backup, edit, and manage files
+- Better security (container doesn't run as root)
+- Works with rootless Docker setups
+
+**Note:** If you don't set PUID/PGID, the container runs as root (works fine, just less secure).
+
 
 ## Authentication
 
