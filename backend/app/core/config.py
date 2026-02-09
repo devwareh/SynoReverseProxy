@@ -3,7 +3,7 @@ import os
 import socket
 import secrets
 from pathlib import Path
-from typing import Optional
+
 from dotenv import load_dotenv
 
 # Load environment variables from config/.env

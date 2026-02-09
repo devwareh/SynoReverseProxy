@@ -24,7 +24,7 @@ function useKeyboardShortcuts(shortcuts, deps = []) {
         const metaPressed = e.metaKey;
 
         // Check if modifiers match
-        const modifiersMatch = 
+        const modifiersMatch =
           (ctrl ? ctrlPressed : !ctrlPressed) &&
           (shift ? shiftPressed : !shiftPressed) &&
           (alt ? altPressed : !altPressed) &&
@@ -42,6 +42,7 @@ function useKeyboardShortcuts(shortcuts, deps = []) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shortcuts, ...deps]);
 }
 

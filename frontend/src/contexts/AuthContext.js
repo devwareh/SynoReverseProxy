@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
   // Check authentication status and setup on mount
   useEffect(() => {
     checkSetupAndAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkSetupAndAuth = async () => {

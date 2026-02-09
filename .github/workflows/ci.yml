@@ -101,7 +101,7 @@ jobs:
       - name: Run Bandit security scanner
         run: |
           bandit -r backend/app -f json -o bandit-report.json || true
-          bandit -r backend/app -f txt
+          bandit -r backend/app -f txt -ll
 
       - name: Run security tests
         run: |
