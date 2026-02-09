@@ -12,6 +12,12 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
+# Copy VERSION file from project root
+COPY ../VERSION /app/../VERSION
+
+# Copy scripts directory (for sync-version.js)
+COPY scripts ./scripts
+
 # Copy source code
 COPY . .
 
@@ -26,6 +32,9 @@ ENV REACT_APP_API_URL=$REACT_APP_API_URL
 # This should match BACKEND_PORT from docker-compose.yml
 ARG REACT_APP_API_PORT=18888
 ENV REACT_APP_API_PORT=$REACT_APP_API_PORT
+
+# Sync version from VERSION file before building
+RUN npm run sync-version
 
 # Build the React app
 RUN npm run build
