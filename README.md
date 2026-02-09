@@ -3,6 +3,7 @@
 [![CI](https://github.com/devwareh/SynoReverseProxy/actions/workflows/ci.yml/badge.svg)](https://github.com/devwareh/SynoReverseProxy/actions/workflows/ci.yml)
 [![Docker](https://github.com/devwareh/SynoReverseProxy/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/devwareh/SynoReverseProxy/actions/workflows/docker-publish.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Sponsor](https://img.shields.io/badge/Sponsor-❤️-ff69b4?logo=github-sponsors)](https://github.com/sponsors/Coder-Pranav)
 
 A web application for managing reverse proxy rules on Synology NAS. Designed for Docker deployment with Portainer and Synology Container Manager.
 
@@ -434,6 +435,12 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before
 
 ## Support
 
-- Documentation: [docs/](docs/)
-- Issues: [GitHub Issues](https://github.com/devwareh/SynoReverseProxy/issues)
-- Discussions: [GitHub Discussions](https://github.com/devwareh/SynoReverseProxy/discussions)
+If you find this project helpful, please consider:
+
+- ⭐ **Star this repository** to show your support
+- ❤️ **[Sponsor on GitHub](https://github.com/sponsors/Coder-Pranav)** to help maintain and improve this project
+- 🐛 **Report issues** on [GitHub Issues](https://github.com/devwareh/SynoReverseProxy/issues)
+- 💬 **Join discussions** on [GitHub Discussions](https://github.com/devwareh/SynoReverseProxy/discussions)
+- 📖 **Read the docs** in [docs/](docs/)
+
+Your support helps keep this project alive and growing! 🚀
