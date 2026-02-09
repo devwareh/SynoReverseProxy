@@ -519,6 +519,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting pull requests.
 
+For maintainers, see the [Release Process](CONTRIBUTING.md#release-process) section for instructions on creating new releases.
+
 ## Support
 
 If you find this project helpful, please consider:
