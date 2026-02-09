@@ -67,8 +67,41 @@ echo "  - frontend/package.json"
 echo "  - frontend/src/utils/version.js"
 echo "  - backend/app/core/version.py (reads from VERSION at runtime)"
 echo ""
-echo "Next steps:"
-echo "  1. Review changes: git diff"
-echo "  2. Commit: git add -A && git commit -m 'chore: Bump version to $NEW_VERSION'"
-echo "  3. Tag: git tag v$NEW_VERSION"
-echo "  4. Push: git push && git push --tags"
+
+# Automate Git operations
+echo "Performing Git operations..."
+
+# Stage changes
+git add VERSION frontend/package.json frontend/src/utils/version.js
+
+# Commit
+GIT_COMMIT_MSG="chore: bump version to $NEW_VERSION"
+git commit -m "$GIT_COMMIT_MSG"
+echo "✓ Committed changes: $GIT_COMMIT_MSG"
+
+# Tag
+GIT_TAG="v$NEW_VERSION"
+git tag "$GIT_TAG"
+echo "✓ Created tag: $GIT_TAG"
+
+echo ""
+echo "-------------------------------------------------------"
+echo "Ready to push!"
+echo "This will trigger the Docker Publish workflow."
+echo "-------------------------------------------------------"
+echo ""
+
+read -p "Do you want to push commits and tags now? (y/n) " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "Pushing to remote..."
+    git push && git push --tags
+    echo ""
+    echo "🚀 Version $NEW_VERSION released!"
+    echo "Check GitHub Actions for build status: https://github.com/devwareh/SynoReverseProxy/actions"
+else
+    echo ""
+    echo "Skipped push."
+    echo "To push manually, run:"
+    echo "  git push && git push --tags"
+fi

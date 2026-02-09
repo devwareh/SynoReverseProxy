@@ -135,6 +135,35 @@ If you discover a security vulnerability, please follow our [Security Policy](do
 
 Feel free to open a [Discussion](../../discussions) for questions or ideas that don't fit into issues.
 
+## Release Process
+
+We follow a continuous delivery model where:
+- Commits to `main` trigger CI tests but do **not** publish Docker images.
+- Releases are triggered by version tags (e.g., `v1.2.3`).
+
+### Creating a Release
+
+To create a new release, simply run the version bump script:
+
+```bash
+# For a patch release (bug fixes): 1.0.0 -> 1.0.1
+./bump-version.sh patch
+
+# For a minor release (new features): 1.0.0 -> 1.1.0
+./bump-version.sh minor
+
+# For a major release (breaking changes): 1.0.0 -> 2.0.0
+./bump-version.sh major
+```
+
+The script will automatically:
+1. Update version numbers in all required files
+2. Create a git commit
+3. Create a git tag
+4. Push changes to GitHub (after confirmation)
+
+This triggers the **Docker Publish** workflow which builds and pushes images to GHCR and creates a GitHub Release.
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the MIT License.
