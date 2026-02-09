@@ -102,7 +102,7 @@ def is_session_valid(sid: Optional[str], synotoken: Optional[str] = None) -> boo
         params["SynoToken"] = synotoken
     
     try:
-        resp = requests.get(check_url, params=params, verify=False, timeout=10)
+        resp = requests.get(check_url, params=params, verify=settings.synology_ssl_verify, timeout=10)
         result = resp.json()
         return result.get('success', False)
     except Exception:
