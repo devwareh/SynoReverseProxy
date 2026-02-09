@@ -28,8 +28,8 @@ services:
       # Optional: Session expiry in seconds (default: 518400 = 6 days)
       - SYNOLOGY_SESSION_EXPIRY_SECS=${SYNOLOGY_SESSION_EXPIRY_SECS:-518400}
       # Web UI Authentication (defaults to admin/admin - CHANGE IN PRODUCTION!)
-      - APP_USERNAME=${APP_USERNAME:-admin}
-      - APP_PASSWORD=${APP_PASSWORD:-admin}
+      - APP_USERNAME=${APP_USERNAME}
+      - APP_PASSWORD=${APP_PASSWORD}
       # Optional: Session secret key (auto-generated if not provided)
       - APP_SESSION_SECRET_KEY=${APP_SESSION_SECRET_KEY:-}
       # Optional: Web session expiry in seconds (default: 3600 = 1 hour)
