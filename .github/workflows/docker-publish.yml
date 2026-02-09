@@ -1,10 +1,12 @@
 name: Docker Publish
 
+# Only publish Docker images on version tags (releases)
+# This saves GitHub Actions minutes and ensures only stable releases are published
+# Manual publishing is still available via workflow_dispatch
 on:
   push:
-    branches: [main]
-    tags: ['v*.*.*']
-  workflow_dispatch:
+    tags: ['v*.*.*']  # Only trigger on version tags like v1.4.1
+  workflow_dispatch:  # Allow manual trigger from GitHub UI
 
 env:
   REGISTRY: ghcr.io
