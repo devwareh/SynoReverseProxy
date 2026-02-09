@@ -81,6 +81,41 @@ else
 fi
 echo ""
 
+
+# Function to get value from .env file
+get_env_value() {
+    local key=$1
+    local default_val=$2
+    local val=""
+    
+    if [ -f "config/.env" ]; then
+        val=$(grep "^${key}=" config/.env | cut -d '=' -f2-)
+    elif [ -f ".env" ]; then
+        val=$(grep "^${key}=" .env | cut -d '=' -f2-)
+    fi
+    
+    if [ -z "$val" ]; then
+        echo "$default_val"
+    else
+        echo "$val"
+    fi
+}
+
+# Source .env file if it exists to make variables available to child processes
+if [ -f "config/.env" ]; then
+    set -a
+    source config/.env
+    set +a
+elif [ -f ".env" ]; then
+    set -a
+    source .env
+    set +a
+fi
+
+# Get ports from env or use defaults (matching Docker configuration)
+BACKEND_PORT=$(get_env_value "BACKEND_PORT" "18888")
+FRONTEND_PORT=$(get_env_value "FRONTEND_PORT" "8889")
+
 # Check Python dependencies
 echo -e "${BLUE}Checking Python dependencies...${NC}"
 if [ ! -f "backend/requirements.txt" ]; then
@@ -162,7 +197,7 @@ cd ..
 echo ""
 
 # Start backend server
-echo -e "${BLUE}Starting backend server...${NC}"
+echo -e "${BLUE}Starting backend server on port ${BACKEND_PORT}...${NC}"
 cd "$PROJECT_ROOT/backend"
 
 # Find conda base path and python executable
@@ -176,7 +211,7 @@ fi
 
 # Start uvicorn using the conda environment's python
 # Run from backend directory, use app.main:app as module path
-$PYTHON_EXEC -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload > ../logs/backend.log 2>&1 &
+$PYTHON_EXEC -m uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT --reload > ../logs/backend.log 2>&1 &
 BACKEND_PID=$!
 
 # Wait a moment for backend to start
@@ -190,11 +225,11 @@ if ! kill -0 $BACKEND_PID 2>/dev/null; then
 fi
 
 echo -e "${GREEN}✓ Backend server running (PID: $BACKEND_PID)${NC}"
-echo -e "${GREEN}  API available at: http://localhost:8000${NC}"
+echo -e "${GREEN}  API available at: http://localhost:${BACKEND_PORT}${NC}"
 echo ""
 
 # Start frontend server
-echo -e "${BLUE}Starting frontend server...${NC}"
+echo -e "${BLUE}Starting frontend server on port ${FRONTEND_PORT}...${NC}"
 cd "$PROJECT_ROOT/frontend"
 
 # Get the machine's IP address for network access
@@ -202,7 +237,8 @@ MACHINE_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev
 
 # Start React dev server bound to all interfaces (0.0.0.0) for network access
 # This allows access from other devices on the same network
-HOST=0.0.0.0 npm start > ../logs/frontend.log 2>&1 &
+# Set PORT environment variable for React scripts
+PORT=$FRONTEND_PORT HOST=0.0.0.0 npm start > ../logs/frontend.log 2>&1 &
 FRONTEND_PID=$!
 
 # Wait a moment for frontend to start
@@ -217,9 +253,9 @@ if ! kill -0 $FRONTEND_PID 2>/dev/null; then
 fi
 
 echo -e "${GREEN}✓ Frontend server running (PID: $FRONTEND_PID)${NC}"
-echo -e "${GREEN}  UI available at: http://localhost:3000${NC}"
+echo -e "${GREEN}  UI available at: http://localhost:${FRONTEND_PORT}${NC}"
 if [ "$MACHINE_IP" != "localhost" ] && [ -n "$MACHINE_IP" ]; then
-    echo -e "${GREEN}  UI also available at: http://${MACHINE_IP}:3000${NC}"
+    echo -e "${GREEN}  UI also available at: http://${MACHINE_IP}:${FRONTEND_PORT}${NC}"
 fi
 echo ""
 
@@ -229,15 +265,15 @@ echo -e "${GREEN}Application started successfully!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "${BLUE}Local Access:${NC}"
-echo -e "${BLUE}  Backend API:${NC}  http://localhost:8000"
-echo -e "${BLUE}  Frontend UI:${NC}  http://localhost:3000"
-echo -e "${BLUE}  API Docs:${NC}     http://localhost:8000/docs"
+echo -e "${BLUE}  Backend API:${NC}  http://localhost:${BACKEND_PORT}"
+echo -e "${BLUE}  Frontend UI:${NC}  http://localhost:${FRONTEND_PORT}"
+echo -e "${BLUE}  API Docs:${NC}     http://localhost:${BACKEND_PORT}/docs"
 if [ "$MACHINE_IP" != "localhost" ] && [ -n "$MACHINE_IP" ]; then
     echo ""
     echo -e "${BLUE}Network Access (from other devices):${NC}"
-    echo -e "${BLUE}  Backend API:${NC}  http://${MACHINE_IP}:8000"
-    echo -e "${BLUE}  Frontend UI:${NC}  http://${MACHINE_IP}:3000"
-    echo -e "${BLUE}  API Docs:${NC}     http://${MACHINE_IP}:8000/docs"
+    echo -e "${BLUE}  Backend API:${NC}  http://${MACHINE_IP}:${BACKEND_PORT}"
+    echo -e "${BLUE}  Frontend UI:${NC}  http://${MACHINE_IP}:${FRONTEND_PORT}"
+    echo -e "${BLUE}  API Docs:${NC}     http://${MACHINE_IP}:${BACKEND_PORT}/docs"
 fi
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop both servers${NC}"

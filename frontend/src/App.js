@@ -76,7 +76,9 @@ function App() {
           const matchesDescription = rule.description && rule.description.toLowerCase().includes(term);
           const matchesFrontend = rule.frontend?.fqdn && rule.frontend.fqdn.toLowerCase().includes(term);
           const matchesBackend = rule.backend?.fqdn && rule.backend.fqdn.toLowerCase().includes(term);
-          return matchesDescription || matchesFrontend || matchesBackend;
+          const matchesFrontendPort = rule.frontend?.port && rule.frontend.port.toString().includes(term);
+          const matchesBackendPort = rule.backend?.port && rule.backend.port.toString().includes(term);
+          return matchesDescription || matchesFrontend || matchesBackend || matchesFrontendPort || matchesBackendPort;
         }
       );
     }

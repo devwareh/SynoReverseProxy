@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FiShield, FiUser, FiLock, FiCheckCircle } from 'react-icons/fi';
+import { authAPI } from '../../../utils/api';
 import './Setup.css';
 
 const Setup = ({ onComplete }) => {
@@ -17,8 +18,8 @@ const Setup = ({ onComplete }) => {
     React.useEffect(() => {
         const checkSetup = async () => {
             try {
-                const response = await fetch('/auth/setup/check');
-                const data = await response.json();
+                const response = await authAPI.checkSetup();
+                const data = response.data;
 
                 if (!data.setup_required) {
                     // Setup not needed, redirect to login
@@ -66,26 +67,26 @@ const Setup = ({ onComplete }) => {
         setLoading(true);
 
         try {
-            const response = await fetch('/auth/setup/complete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: needsUsername ? setupData.username : null,
-                    password: setupData.password,
-                    confirm_password: setupData.confirmPassword
-                })
+            const response = await authAPI.completeSetup({
+                username: needsUsername ? setupData.username : null,
+                password: setupData.password,
+                confirm_password: setupData.confirmPassword
             });
 
-            const data = await response.json();
+            const data = response.data;
 
-            if (!response.ok) {
+            if (!data.success) {
                 throw new Error(data.message || 'Setup failed');
             }
 
             // Setup complete, trigger callback
             onComplete();
         } catch (err) {
-            setError(err.message || 'Setup failed. Please try again.');
+            const errorMessage = err.response?.data?.detail?.message ||
+                err.response?.data?.message ||
+                err.message ||
+                'Setup failed. Please try again.';
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }

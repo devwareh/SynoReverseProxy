@@ -77,6 +77,8 @@ export const rulesAPI = {
 };
 
 export const authAPI = {
+  checkSetup: () => api.get('/auth/setup/check'),
+  completeSetup: (data) => api.post('/auth/setup/complete', data),
   firstLogin: (otpCode) => api.post('/auth/first-login', { otp_code: otpCode || null }),
   login: (username, password, rememberMe = false) =>
     api.post('/auth/login', { username, password, remember_me: rememberMe }),
