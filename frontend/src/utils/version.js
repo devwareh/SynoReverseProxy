@@ -10,7 +10,7 @@
  * - MINOR: New features (backward compatible)
  * - PATCH: Bug fixes (backward compatible)
  */
-export const APP_VERSION = "1.3.0";
+export const APP_VERSION = "1.4.0";
 
 /**
  * Version metadata
