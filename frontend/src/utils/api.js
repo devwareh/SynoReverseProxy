@@ -1,38 +1,6 @@
 import axios from "axios";
 
-// Auto-detect API base URL
-const getApiBase = () => {
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-  
-  const hostname = window.location.hostname;
-  const protocol = window.location.protocol;
-  
-  // Check if it's a domain name (not localhost, not IP, not 0.0.0.0)
-  const isDomainAccess = hostname.includes('.') && 
-                         hostname !== 'localhost' && 
-                         hostname !== '0.0.0.0' &&
-                         hostname !== '127.0.0.1' &&
-                         !/^\d+\.\d+\.\d+\.\d+$/.test(hostname);
-  
-  if (isDomainAccess) {
-    return `${protocol}//${hostname}/api`;
-  }
-  
-  // For localhost, 127.0.0.1, 0.0.0.0, or IP addresses (local development)
-  // Use port 8000 for local development, or use REACT_APP_API_PORT if set
-  const apiPort = process.env.REACT_APP_API_PORT || '8000';
-  
-  // Normalize hostname: use localhost for 0.0.0.0 or 127.0.0.1, otherwise use the actual hostname
-  // This ensures API calls work whether accessed via localhost or IP address
-  let apiHost = hostname;
-  if (hostname === '0.0.0.0' || hostname === '127.0.0.1') {
-    apiHost = 'localhost';
-  }
-  
-  return `${protocol}//${apiHost}:${apiPort}`;
-};
+import { getApiBase } from "./urlHelper";
 
 const API_BASE = getApiBase();
 
@@ -77,7 +45,7 @@ api.interceptors.response.use(
         fullURL: error.config?.baseURL + error.config?.url,
       });
     }
-    
+
     // Handle authentication errors
     if (error.response?.status === 401) {
       // Check if it's a web auth error (not Synology auth)
@@ -110,7 +78,7 @@ export const rulesAPI = {
 
 export const authAPI = {
   firstLogin: (otpCode) => api.post('/auth/first-login', { otp_code: otpCode || null }),
-  login: (username, password, rememberMe = false) => 
+  login: (username, password, rememberMe = false) =>
     api.post('/auth/login', { username, password, remember_me: rememberMe }),
   logout: () => api.post('/auth/logout'),
   checkAuth: () => api.get('/auth/me'),
