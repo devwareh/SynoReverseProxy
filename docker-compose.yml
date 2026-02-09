@@ -43,6 +43,9 @@ services:
       - APP_RATE_LIMIT_WINDOW=${APP_RATE_LIMIT_WINDOW:-300}
       # CORS Allowed Origins (comma-separated list of URLs)
       - CORS_ORIGINS=${CORS_ORIGINS:-}
+      # User/Group IDs for file ownership (optional, defaults to root if not set)
+      - PUID=${PUID:-}
+      - PGID=${PGID:-}
       # Backend port (must match the port mapping above)
       - BACKEND_PORT=${BACKEND_PORT:-18888}
     restart: unless-stopped
