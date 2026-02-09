@@ -1,7 +1,7 @@
 """
 Application version information.
 
-Update this version number when releasing a new version.
+Version is read from the VERSION file at the project root.
 Follow semantic versioning: MAJOR.MINOR.PATCH
 
 - MAJOR: Breaking changes
@@ -9,13 +9,28 @@ Follow semantic versioning: MAJOR.MINOR.PATCH
 - PATCH: Bug fixes (backward compatible)
 """
 
+from pathlib import Path
+
+# Read version from VERSION file at project root
+VERSION_FILE = Path(__file__).parent.parent.parent.parent / "VERSION"
+
+def _read_version() -> str:
+    """Read version from VERSION file."""
+    try:
+        if VERSION_FILE.exists():
+            return VERSION_FILE.read_text().strip()
+    except Exception:
+        pass
+    # Fallback version if file cannot be read
+    return "0.0.0"
+
 # Application version
-APP_VERSION = "1.0.1"
+APP_VERSION = _read_version()
 
 # Version metadata
 VERSION_INFO = {
     "version": APP_VERSION,
-    "api_version": "1.0.1",  # API version (may differ from app version)
+    "api_version": APP_VERSION,  # API version matches app version
 }
 
 

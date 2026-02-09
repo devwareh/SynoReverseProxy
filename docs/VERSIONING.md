@@ -1,148 +1,80 @@
 # Version Management
 
-This document explains how versioning works in the Synology Reverse Proxy Manager project.
+This project uses a centralized version management system with a single source of truth.
 
-## Version Files
+## Version File
 
-### Frontend Version
+The project version is stored in the `VERSION` file at the project root:
 
-- **Location**: `frontend/src/utils/version.js`
-- **Variable**: `APP_VERSION`
-- **Current Version**: `1.0.0`
-
-### Backend Version
-
-- **Location**: `backend/app/core/version.py`
-- **Variable**: `APP_VERSION`
-- **Current Version**: `1.0.0`
-
-## Semantic Versioning
-
-We follow [Semantic Versioning](https://semver.org/) (SemVer) format: `MAJOR.MINOR.PATCH`
-
-- **MAJOR** (1.0.0 → 2.0.0): Breaking changes that are not backward compatible
-- **MINOR** (1.0.0 → 1.1.0): New features that are backward compatible
-- **PATCH** (1.0.0 → 1.0.1): Bug fixes that are backward compatible
-
-## How to Update Version
-
-### 1. Update Frontend Version
-
-Edit `frontend/src/utils/version.js`:
-
-```javascript
-export const APP_VERSION = "1.0.1"; // Update this
+```
+1.3.0
 ```
 
-### 2. Update Backend Version
+## How It Works
 
-Edit `backend/app/core/version.py`:
+### Backend
+- `backend/app/core/version.py` reads from `VERSION` file at runtime
+- No manual updates needed
 
-```python
-APP_VERSION = "1.0.1"  # Update this
+### Frontend
+- `frontend/package.json` version is manually synced
+- `frontend/src/utils/version.js` is auto-generated from `VERSION`
+- Build process automatically syncs version before building
+
+## Bumping Versions
+
+### Automatic (Recommended)
+
+Use the `bump-version.sh` script:
+
+```bash
+# Bump patch version (1.3.0 -> 1.3.1)
+./bump-version.sh patch
+
+# Bump minor version (1.3.0 -> 1.4.0)
+./bump-version.sh minor
+
+# Bump major version (1.3.0 -> 2.0.0)
+./bump-version.sh major
+
+# Set specific version
+./bump-version.sh 2.1.0
 ```
 
-### 3. Update package.json (Optional)
+This script will:
+1. Update the `VERSION` file
+2. Update `frontend/package.json`
+3. Regenerate `frontend/src/utils/version.js`
+4. Show you the next steps (commit, tag, push)
 
-The `package.json` version is separate and used for npm package management:
+### Manual
 
-```json
-{
-  "version": "1.0.1"
-}
-```
+If you need to update manually:
 
-### 4. Update FastAPI App Version
+1. Edit `VERSION` file
+2. Run `cd frontend && npm run sync-version`
+3. Update `frontend/package.json` version field
 
-The FastAPI app version is automatically synced from `backend/app/core/version.py` via import.
+## Docker Builds
+
+The Docker build process automatically syncs versions:
+
+- **Frontend Dockerfile**: Runs `npm run sync-version` before building
+- **Backend**: Reads `VERSION` file at container startup
+
+## CI/CD Integration
+
+When creating releases:
+
+1. Bump version: `./bump-version.sh minor`
+2. Commit changes: `git add -A && git commit -m "chore: Bump version to X.Y.Z"`
+3. Create tag: `git tag vX.Y.Z`
+4. Push: `git push && git push --tags`
+
+The GitHub Actions workflow will automatically build and publish Docker images with the correct version tag.
 
 ## Version Display
 
-### Frontend
-
-- Version is displayed in the footer of the application
-- Accessible via `APP_VERSION` from `utils/version.js`
-
-### Backend
-
-- Version is available via API endpoint: `GET /version`
-- Also included in root endpoint: `GET /`
-- Used in FastAPI OpenAPI documentation
-
-## Version Endpoints
-
-### Get Version Information
-
-```bash
-# Get version info
-curl http://localhost:18888/version
-
-# Response:
-{
-  "version": "1.0.0",
-  "api_version": "1.0.0"
-}
-```
-
-### Root Endpoint
-
-```bash
-curl http://localhost:18888/
-
-# Response:
-{
-  "message": "Synology Reverse Proxy API Ready!",
-  "version": "1.0.0"
-}
-```
-
-## Best Practices
-
-1. **Keep versions in sync**: Frontend and backend should have the same version number
-2. **Update on release**: Update version numbers when creating a new release/tag
-3. **Commit version changes**: Always commit version updates with your release commits
-4. **Tag releases**: Create git tags matching the version number (e.g., `v1.0.0`)
-
-## Release Checklist
-
-When creating a new release:
-
-- [ ] Update `frontend/src/utils/version.js`
-- [ ] Update `backend/app/core/version.py`
-- [ ] Update `frontend/package.json` (if needed)
-- [ ] Update `README.md` if version is mentioned
-- [ ] Create git tag: `git tag v1.0.1`
-- [ ] Push tag: `git push origin v1.0.1`
-- [ ] Create release notes
-
-## Example: Updating from 1.0.0 to 1.0.1
-
-```bash
-# 1. Update frontend version
-# Edit frontend/src/utils/version.js
-export const APP_VERSION = "1.0.1";
-
-# 2. Update backend version
-# Edit backend/app/core/version.py
-APP_VERSION = "1.0.1"
-
-# 3. Commit changes
-git add frontend/src/utils/version.js backend/app/core/version.py
-git commit -m "chore: Bump version to 1.0.1"
-
-# 4. Create and push tag
-git tag v1.0.1
-git push origin v1.0.1
-```
-
-## Version History
-
-| Version | Date | Changes         |
-| ------- | ---- | --------------- |
-| 1.0.0   | 2025 | Initial release |
-
-
-
-
-
-
+- **Backend API**: `/` endpoint returns version info
+- **Frontend UI**: Footer displays version from `APP_VERSION`
+- **Docker Images**: Tagged with version from `VERSION` file
