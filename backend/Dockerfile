@@ -36,15 +36,18 @@ RUN echo '#!/bin/sh' > /entrypoint.sh && \
     echo '  # Ensure app directory has correct permissions' >> /entrypoint.sh && \
     echo '  chown -R $PUID:$PGID /app' >> /entrypoint.sh && \
     echo '  # Run as the specified user' >> /entrypoint.sh && \
-    echo '  exec su-exec $PUID:$PGID "$@"' >> /entrypoint.sh && \
+    echo '  exec gosu $PUID:$PGID "$@"' >> /entrypoint.sh && \
     echo 'else' >> /entrypoint.sh && \
     echo '  echo "Running as root (PUID/PGID not set)"' >> /entrypoint.sh && \
     echo '  exec "$@"' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
-# Install su-exec for user switching
-RUN apt-get update && apt-get install -y su-exec && rm -rf /var/lib/apt/lists/*
+# Install gosu for user switching (Debian-compatible alternative to su-exec)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gosu && \
+    rm -rf /var/lib/apt/lists/* && \
+    gosu nobody true
 
 # Backend port (can be overridden via build arg)
 ARG BACKEND_PORT=18888
