@@ -399,18 +399,72 @@ You can back up your reverse proxy rules to a JSON file and restore them later.
 
 If you forget your web UI password:
 
+**For Docker deployments:**
+
 ```bash
-# Stop the backend
-docker-compose stop backend
+# Option 1: Delete the file from host (recommended)
+rm config/.web_auth.json
 
-# Remove the auth file
+# Then restart the backend container
+docker-compose restart backend
+
+# Option 2: Delete from inside the container
 docker-compose exec backend rm /app/config/.web_auth.json
-
-# Restart the backend
-docker-compose start backend
-
-# Access the web UI - setup wizard will appear
+docker-compose restart backend
 ```
+
+**For local development:**
+
+```bash
+# Use the reset script
+./scripts/reset_password.sh
+
+# Or manually delete the file
+rm config/.web_auth.json
+
+# Then restart the server
+```
+
+After removing the file, access the web UI and you'll see the setup wizard again where you can create a new password.
+
+**Troubleshooting:**
+
+If the setup wizard doesn't appear after resetting:
+
+1. **Clear browser cache and cookies**
+   - Hard refresh: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac)
+   - Or open in incognito/private mode
+
+2. **Check backend logs**
+   ```bash
+   # For Docker
+   docker-compose logs backend | tail -50
+   
+   # For local development
+   tail -50 logs/backend.log
+   ```
+
+3. **Verify file was deleted**
+   ```bash
+   # Should return "No such file"
+   ls -la config/.web_auth.json
+   ```
+
+4. **Check file permissions** (if running as non-root)
+   ```bash
+   # Ensure you have write access to config directory
+   ls -ld config/
+   ```
+
+5. **Restart the backend completely**
+   ```bash
+   # For Docker
+   docker-compose restart backend
+   
+   # For local development
+   # Stop the server (Ctrl+C) and run ./scripts/start.sh again
+   ```
+
 
 ## Updating
 

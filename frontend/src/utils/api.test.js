@@ -22,11 +22,20 @@ describe('getApiBase', () => {
         expect(getApiBase()).toBe('http://custom-api:8080');
     });
 
-    test('should return local dev URL if on localhost:3000', () => {
+    test('should return local dev URL if on localhost (any port)', () => {
         delete process.env.REACT_APP_API_URL;
         window.location = {
             hostname: 'localhost',
             port: '3000'
+        };
+        expect(getApiBase()).toBe('http://localhost:18888');
+    });
+
+    test('should return local dev URL if on localhost:8889', () => {
+        delete process.env.REACT_APP_API_URL;
+        window.location = {
+            hostname: 'localhost',
+            port: '8889'
         };
         expect(getApiBase()).toBe('http://localhost:18888');
     });
@@ -36,7 +45,7 @@ describe('getApiBase', () => {
         process.env.REACT_APP_API_PORT = '9999';
         window.location = {
             hostname: 'localhost',
-            port: '3000'
+            port: '8889'
         };
         expect(getApiBase()).toBe('http://localhost:9999');
     });

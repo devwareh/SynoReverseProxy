@@ -26,8 +26,9 @@ export const AuthProvider = ({ children }) => {
   const checkSetupAndAuth = async () => {
     try {
       // First check if setup is required
-      const setupResponse = await fetch('/auth/setup/check');
-      const setupData = await setupResponse.json();
+      // Use api instance to ensure correct backend URL
+      const setupResponse = await authAPI.checkSetup();
+      const setupData = setupResponse.data;
 
       if (setupData.setup_required) {
         setSetupRequired(true);
