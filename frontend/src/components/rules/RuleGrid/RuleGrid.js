@@ -13,6 +13,8 @@ const RuleGrid = ({
   onDuplicateRule,
   loading = false,
   skeletonCount = 3,
+  operationStateByRuleId = {},
+  onRetryRuleOperation,
 }) => {
   if (loading && rules.length === 0) {
     return (
@@ -42,6 +44,8 @@ const RuleGrid = ({
             onDelete={onDeleteRule}
             onDuplicate={onDuplicateRule}
             loading={loading}
+            operationState={operationStateByRuleId[ruleId] || null}
+            onRetryRuleOperation={onRetryRuleOperation}
           />
         );
       })}
@@ -58,6 +62,8 @@ RuleGrid.propTypes = {
   onDuplicateRule: PropTypes.func.isRequired,
   loading: PropTypes.bool,
   skeletonCount: PropTypes.number,
+  operationStateByRuleId: PropTypes.object,
+  onRetryRuleOperation: PropTypes.func,
 };
 
 export default memo(RuleGrid);

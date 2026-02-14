@@ -10,6 +10,7 @@ import { Header, Container, Toolbar, Footer } from "./components/layout";
 import { Button, Input, SkipLink, Select } from "./components/common";
 import { RuleGrid } from "./components/rules";
 import { ToastContainer } from "./components/notifications";
+import { OperationsPanel } from "./components/operations";
 import { EmptyState, LoadingState } from "./components/empty-states";
 import Notification from "./components/notifications/Notification/Notification";
 import Login from "./components/auth/Login/Login";
@@ -40,6 +41,13 @@ function App() {
     validateRule,
     exportRules,
     importRules,
+    operations,
+    operationSummary,
+    retryOperation,
+    dismissOperation,
+    clearCompletedOperations,
+    setAutoClearPaused,
+    operationStateByRuleId,
   } = useRules();
 
   const { notifications, showNotification, removeNotification } = useNotifications();
@@ -151,15 +159,15 @@ function App() {
     }
 
     if (editingRule) {
-      const result = await updateRule(editingRule.id, fields);
+      const result = await updateRule(editingRule.id, fields, { background: true });
       if (result.success) {
-        showNotification("Rule updated successfully!", "success");
+        showNotification("Rule update queued.", "success");
         resetForm();
       }
     } else {
-      const result = await createRule(fields);
+      const result = await createRule(fields, { background: true });
       if (result.success) {
-        showNotification("Rule created successfully!", "success");
+        showNotification("Rule creation queued.", "success");
         resetForm();
       }
     }
@@ -198,16 +206,16 @@ function App() {
       title: "Delete Rule",
       message: `Are you sure you want to delete "${description}"?`,
       onConfirm: async () => {
-        const result = await deleteRule(ruleId);
+        setConfirmDialog(null);
+        const result = await deleteRule(ruleId, { background: true, targetLabel: description || "Unnamed Rule" });
         if (result.success) {
-          showNotification("Rule deleted successfully!", "success");
+          showNotification("Rule delete queued.", "success");
           setSelectedRules((prev) => {
             const newSet = new Set(prev);
             newSet.delete(ruleId);
             return newSet;
           });
         }
-        setConfirmDialog(null);
       },
     });
   }, [deleteRule, showNotification]);
@@ -228,12 +236,18 @@ function App() {
       title: "Delete Multiple Rules",
       message: `Are you sure you want to delete ${selectedArray.length} rule(s)?\n\n${selectedRuleDescriptions.slice(0, 5).join("\n")}${selectedRuleDescriptions.length > 5 ? `\n...and ${selectedRuleDescriptions.length - 5} more` : ""}\n\nThis cannot be undone.`,
       onConfirm: async () => {
-        const result = await bulkDeleteRules(selectedArray);
+        setConfirmDialog(null);
+        const result = await bulkDeleteRules(selectedArray, {
+          background: true,
+          targetLabel:
+            selectedArray.length === 1
+              ? selectedRuleDescriptions[0] || "Unnamed Rule"
+              : `${selectedArray.length} selected rules`,
+        });
         if (result.success) {
-          showNotification(`${selectedArray.length} rule(s) deleted successfully!`, "success");
+          showNotification(`${selectedArray.length} delete operation(s) queued.`, "success");
           setSelectedRules(new Set());
         }
-        setConfirmDialog(null);
       },
     });
   };
@@ -313,6 +327,15 @@ function App() {
       event.target.value = "";
     }
   };
+
+  const handleRetryOperation = useCallback(async (operationId) => {
+    const result = await retryOperation(operationId);
+    if (result?.success) {
+      showNotification("Operation retried successfully.", "success");
+    } else {
+      showNotification(result?.error || "Retry failed", "error");
+    }
+  }, [retryOperation, showNotification]);
 
   const toggleRuleSelection = useCallback((ruleId) => {
     setSelectedRules((prev) => {
@@ -438,6 +461,14 @@ function App() {
 
         <main id="main-content" className="app-content" role="main" aria-live="polite" aria-atomic="false">
           <ToastContainer notifications={notifications} onClose={removeNotification} />
+          <OperationsPanel
+            operations={operations}
+            operationSummary={operationSummary}
+            onRetryOperation={handleRetryOperation}
+            onDismissOperation={dismissOperation}
+            onClearCompletedOperations={clearCompletedOperations}
+            onAutoClearPauseChange={setAutoClearPaused}
+          />
 
           {rulesError && !rulesError.includes("authentication") && (
             <Notification message={rulesError} type="error" />
@@ -642,6 +673,8 @@ function App() {
                 onDuplicateRule={handleDuplicate}
                 loading={loading}
                 skeletonCount={6}
+                operationStateByRuleId={operationStateByRuleId}
+                onRetryRuleOperation={handleRetryOperation}
               />
             )}
           </div>
@@ -653,4 +686,3 @@ function App() {
 }
 
 export default App;
-
