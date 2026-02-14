@@ -1,6 +1,6 @@
 {
   "name": "dsmreverseproxy",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "private": true,
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
