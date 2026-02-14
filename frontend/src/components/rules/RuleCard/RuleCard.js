@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { FiEdit2, FiTrash2, FiCopy, FiShield } from "react-icons/fi";
 import Checkbox from "../../common/Checkbox/Checkbox";
@@ -16,6 +16,8 @@ const RuleCard = ({
   onDelete,
   onDuplicate,
   loading = false,
+  operationState = null,
+  onRetryRuleOperation,
 }) => {
   const ruleId = rule.UUID || rule.uuid || rule.id;
   const frontendProtocol = rule.frontend?.protocol === 1 ? "HTTPS" : "HTTP";
@@ -25,6 +27,39 @@ const RuleCard = ({
   const frontendScheme = frontendProtocol.toLowerCase();
   const frontendFqdn = rule.frontend?.fqdn;
   const frontendHref = frontendFqdn ? `${frontendScheme}://${frontendFqdn}` : null;
+
+  const rowBusy =
+    operationState &&
+    (operationState.status === "queued" ||
+      operationState.status === "running" ||
+      operationState.status === "verifying");
+
+  const canRetry =
+    operationState &&
+    operationState.status === "failed" &&
+    operationState.recoverable &&
+    operationState.operationId &&
+    typeof onRetryRuleOperation === "function";
+
+  const [tickMs, setTickMs] = useState(Date.now());
+
+  useEffect(() => {
+    if (!rowBusy) return undefined;
+    const timer = setInterval(() => setTickMs(Date.now()), 250);
+    return () => clearInterval(timer);
+  }, [rowBusy]);
+
+  const elapsedMs = operationState?.startedAt ? Math.max(0, tickMs - operationState.startedAt) : 0;
+  const progressPercent = (() => {
+    const status = operationState?.status;
+    if (!status) return 0;
+    if (status === "queued") return 12;
+    if (status === "running") return Math.min(88, 18 + elapsedMs / 140);
+    if (status === "verifying") return Math.min(96, 70 + elapsedMs / 220);
+    if (status === "succeeded") return 100;
+    if (status === "failed") return 100;
+    return 0;
+  })();
 
   const handleSelect = () => {
     onSelect(ruleId);
@@ -42,13 +77,22 @@ const RuleCard = ({
     onDuplicate(ruleId);
   };
 
+  const handleRetry = () => {
+    if (canRetry) {
+      onRetryRuleOperation(operationState.operationId);
+    }
+  };
+
   return (
-    <article className={`rule-card ${isSelected ? "selected" : ""}`} aria-labelledby={`rule-title-${ruleId}`}>
+    <article
+      className={`rule-card ${isSelected ? "selected" : ""} ${rowBusy ? "rule-card-busy" : ""}`}
+      aria-labelledby={`rule-title-${ruleId}`}
+    >
       <div className="rule-checkbox">
         <Checkbox
           checked={isSelected}
           onChange={handleSelect}
-          disabled={loading}
+          disabled={loading || rowBusy}
           aria-label={`Select rule: ${rule.description || "Unnamed Rule"}`}
         />
       </div>
@@ -64,6 +108,11 @@ const RuleCard = ({
                 HSTS
               </Badge>
             )}
+            {operationState?.status && (
+              <Badge variant={operationState.status === "failed" ? "error" : operationState.status === "succeeded" ? "success" : "warning"} size="small">
+                {String(operationState.status).toUpperCase()}
+              </Badge>
+            )}
           </div>
         </div>
         <div className="rule-actions">
@@ -71,7 +120,7 @@ const RuleCard = ({
             variant="icon"
             onClick={handleDuplicate}
             ariaLabel="Duplicate rule"
-            disabled={loading}
+            disabled={loading || rowBusy}
             className="btn-duplicate"
           >
             <FiCopy />
@@ -80,7 +129,7 @@ const RuleCard = ({
             variant="icon"
             onClick={handleEdit}
             ariaLabel="Edit rule"
-            disabled={loading}
+            disabled={loading || rowBusy}
             className="btn-edit"
           >
             <FiEdit2 />
@@ -89,7 +138,7 @@ const RuleCard = ({
             variant="icon"
             onClick={handleDelete}
             ariaLabel="Delete rule"
-            disabled={loading}
+            disabled={loading || rowBusy}
             className="btn-delete"
           >
             <FiTrash2 />
@@ -97,6 +146,33 @@ const RuleCard = ({
         </div>
       </div>
       <div className="rule-body">
+        {operationState?.status && (
+          <div
+            className={`rule-progress rule-progress-${operationState.status}`}
+            role="progressbar"
+            aria-label={`Operation progress for ${rule.description || "rule"}`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progressPercent)}
+          >
+            <div className="rule-progress-fill" style={{ width: `${progressPercent}%` }} />
+          </div>
+        )}
+        {operationState?.message && (
+          <p className="rule-operation-message">{operationState.message}</p>
+        )}
+        {canRetry && (
+          <div className="rule-operation-actions">
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={handleRetry}
+              ariaLabel={`Retry operation for ${rule.description || "rule"}`}
+            >
+              Retry
+            </Button>
+          </div>
+        )}
         <RulePath
           frontend={{
             protocol: frontendProtocol,
@@ -164,7 +240,13 @@ RuleCard.propTypes = {
   onDelete: PropTypes.func.isRequired,
   onDuplicate: PropTypes.func.isRequired,
   loading: PropTypes.bool,
+  operationState: PropTypes.shape({
+    status: PropTypes.string,
+    operationId: PropTypes.string,
+    message: PropTypes.string,
+    recoverable: PropTypes.bool,
+  }),
+  onRetryRuleOperation: PropTypes.func,
 };
 
 export default memo(RuleCard);
-

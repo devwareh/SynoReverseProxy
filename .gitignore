@@ -103,3 +103,6 @@ frontend/coverage/
 # Local deployment scripts (user-specific)
 scripts/build-on-nas.sh
 
+# Codex agent metadata (local-only)
+AGENTS.md
+skills/
