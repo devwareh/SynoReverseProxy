@@ -7,8 +7,12 @@ export const getApiBase = () => {
     }
 
     // 2. Local Development (npm start)
-    // If running on localhost (any port), default to backend on port 18888
-    if (window.location.hostname === 'localhost') {
+    // In development, localhost/127.0.0.1 should call backend directly regardless of dev port.
+    // In production (Docker), use relative /api via nginx to avoid CORS.
+    const host = window.location.hostname;
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+    const isLocalDev = process.env.NODE_ENV === 'development' && isLocalHost;
+    if (isLocalDev) {
         const apiPort = process.env.REACT_APP_API_PORT || '18888';
         return `http://localhost:${apiPort}`;
     }

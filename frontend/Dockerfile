@@ -78,8 +78,7 @@ EXPOSE ${NGINX_PORT}
 
 # Health check (port will be set via env var at runtime)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD sh -c "wget --quiet --tries=1 --spider http://localhost:$$NGINX_PORT/ || exit 1"
+    CMD sh -c "wget --quiet --tries=1 --spider http://127.0.0.1:$${NGINX_PORT:-8889}/ || exit 1"
 
 # Use custom entrypoint
 ENTRYPOINT ["/docker-entrypoint.sh"]
-

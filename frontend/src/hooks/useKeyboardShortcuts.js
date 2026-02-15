@@ -31,7 +31,10 @@ function useKeyboardShortcuts(shortcuts, deps = []) {
           (meta ? metaPressed : !metaPressed);
 
         // Check if key matches (case insensitive)
-        const keyMatch = keyPart && e.key && e.key.toLowerCase() === keyPart.toLowerCase();
+        const keyMatch =
+          keyPart &&
+          typeof e.key === 'string' &&
+          e.key.toLowerCase() === keyPart.toLowerCase();
 
         if (modifiersMatch && (!keyPart || keyMatch)) {
           e.preventDefault();
@@ -47,4 +50,3 @@ function useKeyboardShortcuts(shortcuts, deps = []) {
 }
 
 export default useKeyboardShortcuts;
-

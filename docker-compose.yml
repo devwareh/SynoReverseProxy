@@ -50,7 +50,13 @@ services:
       - BACKEND_PORT=${BACKEND_PORT:-18888}
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "python -c \"import requests; requests.get('http://localhost:$$BACKEND_PORT/', timeout=5)\"" ]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os,requests; requests.get(f\"http://localhost:{os.getenv('BACKEND_PORT','18888')}/\", timeout=5)",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -81,7 +87,7 @@ services:
       - backend
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:$$NGINX_PORT/ || exit 1" ]
+      test: [ "CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1:$${NGINX_PORT:-8889}/ || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
