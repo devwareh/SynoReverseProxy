@@ -1,5 +1,14 @@
 import { useState, useCallback } from 'react';
 
+function normalizeNotificationMessage(message) {
+  if (typeof message === 'string') return message;
+  if (message == null) return '';
+  if (typeof message === 'object') {
+    return String(message.message || message.error || JSON.stringify(message));
+  }
+  return String(message);
+}
+
 /**
  * Custom hook to manage notifications/toasts
  */
@@ -14,7 +23,7 @@ function useNotifications() {
     const id = Date.now() + Math.random();
     const notification = {
       id,
-      message,
+      message: normalizeNotificationMessage(message),
       type,
       duration,
     };
@@ -43,4 +52,3 @@ function useNotifications() {
 }
 
 export default useNotifications;
-

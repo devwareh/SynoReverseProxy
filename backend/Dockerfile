@@ -58,11 +58,10 @@ EXPOSE ${BACKEND_PORT}
 
 # Health check (port will be set via env var at runtime)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD sh -c "python -c \"import requests; requests.get('http://localhost:$$BACKEND_PORT/', timeout=5)\"" || exit 1
+    CMD python -c "import os,requests; requests.get(f\"http://localhost:{os.getenv('BACKEND_PORT','18888')}/\", timeout=5)" || exit 1
 
 # Set entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Run the application
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${BACKEND_PORT}"]
-
