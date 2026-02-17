@@ -129,11 +129,43 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
+
+      - name: Get previous tag
+        id: previoustag
+        run: |
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "^${{ github.ref_name }}$" | head -n 1)
+          echo "previous_tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+          echo "Previous tag: $PREVIOUS_TAG"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "## What's Changed" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          
+          # Get commits since last tag
+          if [ -n "${{ steps.previoustag.outputs.previous_tag }}" ]; then
+            git log ${{ steps.previoustag.outputs.previous_tag }}..${{ github.ref_name }} \
+              --pretty=format:"- %s (%h)" \
+              --no-merges >> RELEASE_NOTES.md
+          else
+            git log ${{ github.ref_name }} \
+              --pretty=format:"- %s (%h)" \
+              --no-merges \
+              --max-count=20 >> RELEASE_NOTES.md
+          fi
+          
+          echo "" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           generate_release_notes: true
+          body_path: RELEASE_NOTES.md
+          append_body: true
           body: |
             ## Docker Images
 
@@ -141,6 +173,15 @@ jobs:
             ```bash
             docker pull ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.ref_name }}
             docker pull ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.ref_name }}
+            ```
+
+            Or update your docker-compose.yml to use this version:
+            ```yaml
+            services:
+              backend:
+                image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.ref_name }}
+              frontend:
+                image: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.ref_name }}
             ```
 
             ## Quick Start
@@ -152,5 +193,22 @@ jobs:
             export SYNOLOGY_PASSWORD=your_password
 
             # Start the application
+            docker-compose pull
             docker-compose up -d
+            ```
+
+            ## Upgrade Instructions
+
+            ```bash
+            # Stop existing containers
+            docker-compose down
+
+            # Pull latest images
+            docker-compose pull
+
+            # Start with new version
+            docker-compose up -d
+
+            # Verify health status
+            docker ps
             ```
