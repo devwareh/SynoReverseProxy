@@ -127,8 +127,11 @@ def first_login(request: FirstLoginRequest):
                 except Exception:
                     pass
             
-            # Handle specific error codes
-            if error_code == 401:
+            # Handle specific Synology API error codes
+            # Reference: https://global.download.synology.com/download/Document/Software/DeveloperGuide/Os/DSM/All/enu/DSM_Login_Web_API_Guide_enu.pdf
+            
+            # 400 = No such account or incorrect password
+            if error_code == 400:
                 raise HTTPException(
                     status_code=401,
                     detail={
@@ -139,10 +142,85 @@ def first_login(request: FirstLoginRequest):
                     }
                 )
             
+            # 401 = Disabled account
+            if error_code == 401:
+                raise HTTPException(
+                    status_code=401,
+                    detail={
+                        "success": False,
+                        "error": "Account disabled",
+                        "message": "This account has been disabled. Please contact your administrator.",
+                        "requires_otp": False
+                    }
+                )
+            
+            # 402 = Denied permission
+            if error_code == 402:
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "success": False,
+                        "error": "Permission denied",
+                        "message": "This account does not have permission to access the API.",
+                        "requires_otp": False
+                    }
+                )
+            
+            # 407 = Blocked IP source
+            if error_code == 407:
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "success": False,
+                        "error": "IP blocked",
+                        "message": "Your IP address has been blocked. Please contact your administrator.",
+                        "requires_otp": False
+                    }
+                )
+            
+            # 408 = Expired password cannot change
+            if error_code == 408:
+                raise HTTPException(
+                    status_code=401,
+                    detail={
+                        "success": False,
+                        "error": "Password expired",
+                        "message": "Your password has expired and cannot be changed through this interface. Please contact your administrator.",
+                        "requires_otp": False
+                    }
+                )
+            
+            # 409 = Expired password
+            if error_code == 409:
+                raise HTTPException(
+                    status_code=401,
+                    detail={
+                        "success": False,
+                        "error": "Password expired",
+                        "message": "Your password has expired. Please change it through DSM before using this application.",
+                        "requires_otp": False
+                    }
+                )
+            
+            # 410 = Password must be changed
+            if error_code == 410:
+                raise HTTPException(
+                    status_code=401,
+                    detail={
+                        "success": False,
+                        "error": "Password change required",
+                        "message": "You must change your password through DSM before using this application.",
+                        "requires_otp": False
+                    }
+                )
+            
             # Check for 2FA-related errors in error message or code
-            # Synology error codes for 2FA: typically 403 or specific 2FA error codes
+            # Synology error codes for 2FA:
+            #   403 = 2-factor authentication code required
+            #   404 = Failed to authenticate 2-factor authentication code
+            #   406 = Enforce to authenticate with 2-factor authentication code
             is_2fa_error = (
-                error_code in [403, 400] or  # Common 2FA error codes
+                error_code in [403, 404, 406] or  # 2FA error codes
                 any(keyword in error_str for keyword in [
                     "otp", "2fa", "two-factor", "two factor", 
                     "authentication code", "verification code",
@@ -152,6 +230,30 @@ def first_login(request: FirstLoginRequest):
                     "otp", "2fa", "two-factor", "verification"
                 ]))
             )
+            
+            # Synology error code 404 = Failed to authenticate 2FA code (invalid/expired OTP)
+            if error_code == 404:
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "success": False,
+                        "error": "Invalid OTP code",
+                        "message": "The provided OTP code is incorrect or expired. Please generate a new OTP code and try again.",
+                        "requires_otp": True
+                    }
+                )
+            
+            # Synology error code 406 = Enforce to authenticate with 2FA code
+            if error_code == 406:
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "success": False,
+                        "error": "2FA authentication required",
+                        "message": "Your account requires 2-factor authentication. Please provide an OTP code.",
+                        "requires_otp": True
+                    }
+                )
             
             if is_2fa_error:
                 # 2FA is required but OTP was missing or incorrect
