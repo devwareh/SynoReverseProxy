@@ -48,11 +48,24 @@ api.interceptors.response.use(
 
     // Handle authentication errors
     if (error.response?.status === 401) {
-      // Check if it's a web auth error (not Synology auth)
       const errorDetail = error.response?.data?.detail;
-      if (errorDetail && typeof errorDetail === 'object' && errorDetail.error === 'authentication_required') {
-        // Web UI authentication required - trigger logout
-        // Dispatch custom event for auth context to handle
+      // Only fire auth:logout for genuine web-session failures.
+      // Condition requires the explicit error shape set by the web-auth layer
+      // (errorDetail.error === 'authentication_required'), AND excludes NAS-auth
+      // 401s that carry requires_first_login:true — those are handled by the OTP
+      // probe in App.js and must not log the user out of the web UI.
+      //
+      // Contract note: requires_first_login is set on 401s from the rules API
+      // (dependencies.py). The /auth/first-login endpoint currently returns 400
+      // for 2FA errors and sets requires_otp — a separate field on a different
+      // HTTP status code. If that contract changes, both paths need to be revisited.
+      const isWebAuthRequired =
+        errorDetail &&
+        typeof errorDetail === 'object' &&
+        errorDetail.error === 'authentication_required' &&
+        errorDetail.requires_first_login !== true;
+
+      if (isWebAuthRequired) {
         window.dispatchEvent(new CustomEvent('auth:logout'));
       }
     }
@@ -79,6 +92,12 @@ export const rulesAPI = {
 export const authAPI = {
   checkSetup: () => api.get('/auth/setup/check'),
   completeSetup: (data) => api.post('/auth/setup/complete', data),
+  /**
+   * Attempt NAS authentication.
+   * @param {string|null} otpCode - 6-digit TOTP code, or null to probe without OTP.
+   *   Pass null as a sentinel to detect whether 2FA is required without prompting
+   *   the user first. The backend returns requires_otp:true if 2FA is enforced.
+   */
   firstLogin: (otpCode) => api.post('/auth/first-login', { otp_code: otpCode || null }),
   login: (username, password, rememberMe = false) =>
     api.post('/auth/login', { username, password, remember_me: rememberMe }),

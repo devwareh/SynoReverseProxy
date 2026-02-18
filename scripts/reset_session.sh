@@ -17,13 +17,27 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 cd "$PROJECT_ROOT"
 
+# Resolve data path for the current environment.
+# Explicit override: set SYNO_ENV=docker or SYNO_ENV=dev before running this script.
+# Fallback: filesystem detection (backend/data directory presence = dev layout).
+if [ "${SYNO_ENV:-}" = "docker" ]; then
+    DATA_PREFIX="data"
+    echo -e "${BLUE}Environment: Docker (SYNO_ENV=docker)${NC}"
+elif [ "${SYNO_ENV:-}" = "dev" ] || [ -d "backend/data" ]; then
+    DATA_PREFIX="backend/data"
+    echo -e "${BLUE}Environment: Local dev (backend/ layout)${NC}"
+else
+    DATA_PREFIX="data"
+    echo -e "${BLUE}Environment: Docker / standalone (root layout)${NC}"
+fi
+
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}Reset Synology Session${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
 # Check if session file exists
-SESSION_FILE="data/syno_session.json.enc"
+SESSION_FILE="${DATA_PREFIX}/syno_session.json.enc"
 
 if [ -f "$SESSION_FILE" ]; then
     echo -e "${YELLOW}Found existing session file: $SESSION_FILE${NC}"

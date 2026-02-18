@@ -420,10 +420,24 @@ docker-compose restart backend
 ./scripts/reset_password.sh
 
 # Or manually delete the file
-rm config/.web_auth.json
+rm backend/config/.web_auth.json   # local dev layout (after start.sh has run at least once)
+rm config/.web_auth.json           # Docker / fresh clone before start.sh has ever run
 
 # Then restart the server
 ```
+
+> **Fresh clone note:** The reset scripts auto-detect the environment by checking whether the
+> `backend/config/` directory exists (created by `start.sh` on first run). On a fresh clone
+> where `start.sh` has never been executed that directory does not exist yet, so the scripts
+> will default to the Docker layout (`config/`). If you are working in local dev mode and
+> `start.sh` has not been run yet, set the environment variable explicitly:
+>
+> ```bash
+> SYNO_ENV=dev ./scripts/reset_password.sh
+> SYNO_ENV=dev ./scripts/reset_session.sh
+> ```
+>
+> Valid values: `dev` (local uvicorn layout under `backend/`) · `docker` (root layout)
 
 After removing the file, access the web UI and you'll see the setup wizard again where you can create a new password.
 

@@ -17,13 +17,30 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 cd "$PROJECT_ROOT"
 
+# Resolve config/data paths for the current environment.
+# Explicit override: set SYNO_ENV=docker or SYNO_ENV=dev before running this script.
+# Fallback: filesystem detection (backend/config directory presence = dev layout).
+if [ "${SYNO_ENV:-}" = "docker" ]; then
+    CONFIG_PREFIX="config"
+    DATA_PREFIX="data"
+    echo -e "${BLUE}Environment: Docker (SYNO_ENV=docker)${NC}"
+elif [ "${SYNO_ENV:-}" = "dev" ] || [ -d "backend/config" ]; then
+    CONFIG_PREFIX="backend/config"
+    DATA_PREFIX="backend/data"
+    echo -e "${BLUE}Environment: Local dev (backend/ layout)${NC}"
+else
+    CONFIG_PREFIX="config"
+    DATA_PREFIX="data"
+    echo -e "${BLUE}Environment: Docker / standalone (root layout)${NC}"
+fi
+
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}Reset Web UI Password${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
 # Check if auth file exists
-AUTH_FILE="config/.web_auth.json"
+AUTH_FILE="${CONFIG_PREFIX}/.web_auth.json"
 
 if [ -f "$AUTH_FILE" ]; then
     echo -e "${YELLOW}Found existing web authentication file: $AUTH_FILE${NC}"
@@ -51,7 +68,7 @@ else
 fi
 
 # Also clear web sessions
-SESSION_FILE="data/web_sessions.json.enc"
+SESSION_FILE="${DATA_PREFIX}/web_sessions.json.enc"
 if [ -f "$SESSION_FILE" ]; then
     rm "$SESSION_FILE"
     echo -e "${GREEN}✓ Cleared web sessions${NC}"
