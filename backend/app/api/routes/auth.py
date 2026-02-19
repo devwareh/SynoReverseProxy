@@ -26,6 +26,31 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 # Cookie name for web session
 SESSION_COOKIE_NAME = "web_session_id"
 
+# Dispatch table: Synology DSM error code → (http_status, error_label, user_message, requires_otp)
+# Reference: DSM Login Web API Guide (codes 400-410)
+_SYNO_ERRORS: dict[int, tuple[int, str, str, bool]] = {
+    400: (401, "Invalid credentials",
+          "Username or password is incorrect. Please check your credentials.", False),
+    401: (401, "Account disabled",
+          "This account has been disabled. Please contact your administrator.", False),
+    402: (403, "Permission denied",
+          "This account does not have permission to access the API.", False),
+    403: (400, "2FA authentication required",
+          "Your account requires 2-factor authentication. Please provide an OTP code.", True),
+    404: (400, "Invalid OTP code",
+          "The provided OTP code is incorrect or expired. Please generate a new OTP code and try again.", True),
+    406: (400, "2FA authentication required",
+          "Your account requires 2-factor authentication. Please provide an OTP code.", True),
+    407: (403, "IP blocked",
+          "Your IP address has been blocked. Please contact your administrator.", False),
+    408: (401, "Password expired",
+          "Your password has expired and cannot be changed through this interface. Please contact your administrator.", False),
+    409: (401, "Password expired",
+          "Your password has expired. Please change it through DSM before using this application.", False),
+    410: (401, "Password change required",
+          "You must change your password through DSM before using this application.", False),
+}
+
 
 class FirstLoginRequest(BaseModel):
     """Request model for first login endpoint."""
@@ -102,31 +127,6 @@ def first_login(request: FirstLoginRequest):
                 error_code, bool(request.otp_code),
             )
 
-            # Dispatch table: Synology error code → (http_status, error_label, message, requires_otp)
-            # Reference: DSM Login Web API Guide
-            _SYNO_ERRORS = {
-                400: (401, "Invalid credentials",
-                      "Username or password is incorrect. Please check your credentials.", False),
-                401: (401, "Account disabled",
-                      "This account has been disabled. Please contact your administrator.", False),
-                402: (403, "Permission denied",
-                      "This account does not have permission to access the API.", False),
-                403: (400, "2FA authentication required",
-                      "Your account requires 2-factor authentication. Please provide an OTP code.", True),
-                404: (400, "Invalid OTP code",
-                      "The provided OTP code is incorrect or expired. Please generate a new OTP code and try again.", True),
-                406: (400, "2FA authentication required",
-                      "Your account requires 2-factor authentication. Please provide an OTP code.", True),
-                407: (403, "IP blocked",
-                      "Your IP address has been blocked. Please contact your administrator.", False),
-                408: (401, "Password expired",
-                      "Your password has expired and cannot be changed through this interface. Please contact your administrator.", False),
-                409: (401, "Password expired",
-                      "Your password has expired. Please change it through DSM before using this application.", False),
-                410: (401, "Password change required",
-                      "You must change your password through DSM before using this application.", False),
-            }
-
             if error_code in _SYNO_ERRORS:
                 http_status, error_label, message, requires_otp = _SYNO_ERRORS[error_code]
                 raise HTTPException(
@@ -168,7 +168,7 @@ def first_login(request: FirstLoginRequest):
                 detail={
                     "success": False,
                     "error": "Authentication failed",
-                    "message": f"Synology login failed (error code: {error_code}). Please verify your credentials.",
+                    "message": f"Synology login failed (error code: {error_code if error_code is not None else 'unknown'}). Please verify your credentials.",
                     "requires_otp": None,
                 }
             )
