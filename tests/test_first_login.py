@@ -316,24 +316,50 @@ class TestSynologyPasswordExpiry:
 
 
 class TestErrorClassificationLogic:
-    """Verify dispatch-table correctness directly."""
+    """Dispatch-table correctness: verify error codes route to the right HTTP responses."""
 
-    def test_error_code_400_not_classified_as_2fa(self):
+    @patch('app.api.routes.auth.get_new_session')
+    @patch('app.api.routes.auth.load_session')
+    def test_error_code_400_not_classified_as_2fa(self, mock_load, mock_get):
         """Error code 400 must produce requires_otp=False (wrong credentials, not 2FA)."""
-        err = _syno_err(400)
-        assert err.error_code == 400
-        # Behavioral verification: the dispatch table in first_login maps 400 → requires_otp=False.
-        # Covered in TestSynologyErrorCode400; this test confirms the SynologyAuthError contract.
-        assert err.raw_response['error']['code'] == 400
+        mock_load.return_value = None
+        mock_get.side_effect = _syno_err(400)
+        with pytest.raises(HTTPException) as exc_info:
+            first_login(FirstLoginRequest(otp_code=None))
+        assert exc_info.value.detail['requires_otp'] is False
 
-    def test_2fa_codes_produce_requires_otp_true(self):
-        """Error codes 403, 404, 406 must all produce requires_otp=True."""
-        for code in (403, 404, 406):
-            err = _syno_err(code)
-            assert err.error_code == code
+    @pytest.mark.parametrize("code", [403, 404, 406])
+    @patch('app.api.routes.auth.get_new_session')
+    @patch('app.api.routes.auth.load_session')
+    def test_2fa_codes_produce_requires_otp_true(self, mock_load, mock_get, code):
+        """Error codes 403, 404, 406 must produce requires_otp=True."""
+        mock_load.return_value = None
+        mock_get.side_effect = _syno_err(code)
+        with pytest.raises(HTTPException) as exc_info:
+            first_login(FirstLoginRequest(otp_code=None))
+        assert exc_info.value.detail['requires_otp'] is True
 
-    def test_credential_and_account_codes_produce_requires_otp_false(self):
-        """Error codes 400, 401, 402, 407, 408, 409, 410 must produce requires_otp=False."""
-        for code in (400, 401, 402, 407, 408, 409, 410):
-            err = _syno_err(code)
-            assert err.error_code == code
+    @pytest.mark.parametrize("code", [400, 401, 402, 407, 408, 409, 410])
+    @patch('app.api.routes.auth.get_new_session')
+    @patch('app.api.routes.auth.load_session')
+    def test_credential_and_account_codes_produce_requires_otp_false(self, mock_load, mock_get, code):
+        """Error codes 400, 401, 402, 407–410 must produce requires_otp=False."""
+        mock_load.return_value = None
+        mock_get.side_effect = _syno_err(code)
+        with pytest.raises(HTTPException) as exc_info:
+            first_login(FirstLoginRequest(otp_code=None))
+        assert exc_info.value.detail['requires_otp'] is False
+
+    @patch('app.api.routes.auth.get_new_session')
+    @patch('app.api.routes.auth.load_session')
+    def test_unknown_error_code_none_no_otp_returns_400(self, mock_load, mock_get):
+        """Unknown error (code=None) with no OTP must return 400 with 'unknown' in message."""
+        mock_load.return_value = None
+        mock_get.side_effect = SynologyAuthError(
+            error_code=None, raw_response={'success': False}
+        )
+        with pytest.raises(HTTPException) as exc_info:
+            first_login(FirstLoginRequest(otp_code=None))
+        assert exc_info.value.status_code == 400
+        assert 'unknown' in exc_info.value.detail['message'].lower()
+        assert exc_info.value.detail['requires_otp'] is None
