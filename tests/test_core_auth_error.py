@@ -29,3 +29,13 @@ def test_get_new_session_raises_synology_auth_error_on_failure(monkeypatch):
     with pytest.raises(SynologyAuthError) as exc_info:
         get_new_session(device_id=None, otp_code=None)
     assert exc_info.value.error_code == 400
+
+
+def test_routes_auth_does_not_define_its_own_synology_auth_error():
+    """SynologyAuthError must be defined in core/auth.py, not routes/auth.py."""
+    import inspect
+    import app.api.routes.auth as routes_mod
+    src = inspect.getsource(routes_mod)
+    assert "class SynologyAuthError" not in src, (
+        "SynologyAuthError must be defined in core/auth.py, not routes/auth.py"
+    )
