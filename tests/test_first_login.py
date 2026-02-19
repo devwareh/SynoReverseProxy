@@ -25,7 +25,7 @@ def _syno_err(code):
 class TestSynologyErrorCode400:
     """Test handling of Synology error code 400 (bad credentials)."""
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_400_without_otp_returns_invalid_credentials(self, mock_load_session, mock_get_session):
         """Synology error 400 = wrong password — must NOT be classified as 2FA."""
@@ -46,7 +46,7 @@ class TestSynologyErrorCode400:
         assert '2fa' not in detail['message'].lower()
         assert 'otp' not in detail['message'].lower()
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_400_with_otp_returns_invalid_credentials(self, mock_load_session, mock_get_session):
         """Error 400 with OTP provided still means bad credentials, not OTP issue."""
@@ -66,7 +66,7 @@ class TestSynologyErrorCode400:
 class TestSynologyErrorCode401:
     """Test handling of Synology error code 401 (account disabled)."""
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_401_returns_account_disabled(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None
@@ -86,7 +86,7 @@ class TestSynologyErrorCode401:
 class TestSynologyErrorCode403:
     """Test handling of Synology error code 403 (2FA required)."""
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_403_without_otp_requires_2fa(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None
@@ -102,7 +102,7 @@ class TestSynologyErrorCode403:
         assert detail['requires_otp'] is True
         assert '2fa' in detail['message'].lower() or 'otp' in detail['message'].lower()
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_403_with_wrong_otp_indicates_invalid_otp(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None
@@ -121,7 +121,7 @@ class TestSynologyErrorCode403:
 class TestSynologyErrorCode404:
     """Test handling of Synology error code 404 (invalid OTP)."""
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_404_with_otp_returns_invalid_otp(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None
@@ -142,7 +142,7 @@ class TestSynologyErrorCode404:
 class TestSuccessfulLogin:
     """Test successful login scenarios."""
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_successful_login_without_otp_non_2fa_user(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None
@@ -160,7 +160,7 @@ class TestSuccessfulLogin:
         assert response['requires_otp'] is False
         assert response['device_token_saved'] is True
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_successful_login_with_otp_2fa_user(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None
@@ -206,7 +206,7 @@ class TestDeviceTokenFastPath:
 class TestSynologyErrorCode402:
     """Test handling of Synology error code 402 (permission denied)."""
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_402_returns_permission_denied(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None
@@ -226,7 +226,7 @@ class TestSynologyErrorCode402:
 class TestSynologyErrorCode406:
     """Test handling of Synology error code 406 (enforce 2FA)."""
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_406_requires_2fa(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None
@@ -246,7 +246,7 @@ class TestSynologyErrorCode406:
 class TestSynologyErrorCode407:
     """Test handling of Synology error code 407 (blocked IP)."""
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_407_returns_ip_blocked(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None
@@ -266,7 +266,7 @@ class TestSynologyErrorCode407:
 class TestSynologyPasswordExpiry:
     """Test handling of password expiry error codes."""
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_408_expired_password_cannot_change(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None
@@ -282,7 +282,7 @@ class TestSynologyPasswordExpiry:
         assert detail['requires_otp'] is False
         assert 'expired' in detail['message'].lower()
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_409_expired_password(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None
@@ -298,7 +298,7 @@ class TestSynologyPasswordExpiry:
         assert detail['requires_otp'] is False
         assert 'expired' in detail['message'].lower()
 
-    @patch('app.api.routes.auth.get_new_session_with_otp')
+    @patch('app.api.routes.auth.get_new_session')
     @patch('app.api.routes.auth.load_session')
     def test_error_410_password_must_change(self, mock_load_session, mock_get_session):
         mock_load_session.return_value = None

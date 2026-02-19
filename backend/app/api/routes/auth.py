@@ -1,12 +1,10 @@
 """API routes for authentication."""
 import logging
-import requests
-import time
 
 from fastapi import APIRouter, HTTPException, Response, Request, Cookie
 from pydantic import BaseModel
 from typing import Optional
-from app.core.auth import is_session_valid, SynologyAuthError
+from app.core.auth import is_session_valid, get_new_session, SynologyAuthError
 from app.core.config import get_settings
 from app.core.web_auth import (
     verify_web_credentials,
@@ -85,7 +83,7 @@ def first_login(request: FirstLoginRequest):
         # Attempt first login with optional OTP
         try:
             # Try login with OTP if provided, or without OTP if not provided
-            session_data = get_new_session_with_otp(otp_code=request.otp_code)
+            session_data = get_new_session(otp_code=request.otp_code)
             
             # Success - device token should be saved
             device_token_saved = session_data.get('did') is not None
@@ -145,7 +143,7 @@ def first_login(request: FirstLoginRequest):
             # Guards against OTP being sent to a non-2FA account.
             if request.otp_code:
                 try:
-                    session_data = get_new_session_with_otp(otp_code=None)
+                    session_data = get_new_session(otp_code=None)
                     device_token_saved = session_data.get('did') is not None
                     return {
                         "success": True,
@@ -187,58 +185,6 @@ def first_login(request: FirstLoginRequest):
             }
         )
 
-
-def get_new_session_with_otp(otp_code: Optional[str] = None) -> dict:
-    """
-    Helper function to get new session with optional OTP.
-    Handles both 2FA and non-2FA users.
-    """
-    settings = get_settings()
-    login_url = f"{settings.synology_nas_url}/webapi/entry.cgi"
-    params = {
-        "api": "SYNO.API.Auth",
-        "method": "login",
-        "version": "6",
-        "account": settings.synology_username,
-        "passwd": settings.synology_password,
-        "session": "Core",
-        "format": "sid",
-        "enable_syno_token": "yes",
-        "enable_device_token": "yes",  # Always try to enable device token
-        "device_name": settings.synology_device_name
-    }
-    
-    # Add OTP if provided
-    if otp_code:
-        params["otp_code"] = otp_code
-    
-    session = requests.Session()
-    resp = session.get(login_url, params=params, verify=settings.synology_ssl_verify)
-    resp.raise_for_status()
-    result = resp.json()
-
-    if not result.get('success'):
-        error = result.get('error')
-        error_code = error.get('code') if isinstance(error, dict) else None
-        _logger.error("Synology login failed: code=%s response=%s", error_code, result)
-        raise SynologyAuthError(error_code=error_code, raw_response=result)
-
-    data = result["data"]
-    sid = data["sid"]
-    did = data.get("did")
-    synotoken = data.get("synotoken")
-
-    expiry_time = time.time() + settings.synology_session_expiry_secs
-    
-    # Save session with device token
-    save_session(sid, did, synotoken, expiry_time)
-    
-    return {
-        'sid': sid,
-        'did': did,
-        'synotoken': synotoken,
-        'expiry_time': expiry_time
-    }
 
 
 @router.post("/login")
