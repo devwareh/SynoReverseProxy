@@ -2,7 +2,7 @@
 from fastapi import HTTPException, Cookie
 from typing import Optional
 from app.core.synology import SynoReverseProxyManager
-from app.core.auth import get_new_session, is_session_valid
+from app.core.auth import get_new_session, is_session_valid, SynologyAuthError
 from app.core.config import get_settings
 from app.core.web_auth import validate_session, get_session_username
 from app.utils.encryption import load_session
@@ -62,11 +62,19 @@ def get_mgr() -> SynoReverseProxyManager:
         # Try to use device_id if available for OTP-less login
         device_id = session_data.get('did') if session_data else None
         if device_id:
-            # We have a device token, can login without OTP
-            session_data = get_new_session(device_id=device_id)
+            try:
+                session_data = get_new_session(device_id=device_id)
+            except SynologyAuthError:
+                raise HTTPException(
+                    status_code=401,
+                    detail={
+                        "error": "authentication_required",
+                        "message": "Stored device token was rejected by the NAS. Please call /auth/first-login to re-authenticate.",
+                        "requires_first_login": True
+                    }
+                )
         else:
             # No device token - user needs to call /auth/first-login first
-            from fastapi import HTTPException
             raise HTTPException(
                 status_code=401,
                 detail={
