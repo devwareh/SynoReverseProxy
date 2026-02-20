@@ -1,7 +1,11 @@
 """Tests for SSL certificate verification behavior in get_new_session."""
+import sys
 import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'backend'))
+
+import importlib
 import pytest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 
 
 def _mock_success_response():
@@ -35,14 +39,13 @@ def _call_get_new_session(extra_env=None):
 
     with patch.dict(os.environ, base_env, clear=True), \
          patch('requests.Session') as mock_session_cls, \
-         patch('app.utils.encryption.save_session'):
+         patch('app.core.auth.save_session'):
 
         mock_session_instance = MagicMock()
         mock_session_cls.return_value = mock_session_instance
         mock_session_instance.get.return_value = _mock_success_response()
 
         # Import fresh after patching env so Settings picks up new values
-        import importlib
         import app.core.config as config_mod
         import app.core.auth as auth_mod
         importlib.reload(config_mod)
