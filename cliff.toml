@@ -1,0 +1,41 @@
+[changelog]
+header = ""
+body = """
+{% if version %}\
+    ## {{ version }} — {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+    ## Unreleased
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | upper_first }}
+    {% for commit in commits %}
+        - {{ commit.message | upper_first }}\
+    {% endfor %}
+{% endfor %}
+"""
+trim = true
+footer = ""
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+commit_preprocessors = []
+commit_parsers = [
+  { message = "^feat", group = "New Features" },
+  { message = "^fix", group = "Bug Fixes" },
+  { message = "^refactor", group = "Improvements" },
+  { message = "^docs", group = "Documentation" },
+  { message = "^ci", group = "CI/CD" },
+  { message = "^test", group = "Tests" },
+  { message = "^chore\\(release\\)", skip = true },
+  { message = "^chore: bump version to", skip = true },
+  { message = "^chore", group = "Other Changes" },
+]
+protect_breaking_commits = false
+filter_commits = false
+tag_pattern = "v[0-9].*"
+skip_tags = ""
+ignore_tags = ""
+topo_order = false
+sort_commits = "oldest"
