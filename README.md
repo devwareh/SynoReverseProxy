@@ -268,7 +268,7 @@ After setup, you can log in with your admin credentials.
 | `APP_USERNAME` | - | Pre-set web UI username (skips setup) |
 | `APP_PASSWORD` | - | Pre-set web UI password (skips setup) |
 | `SYNOLOGY_OTP_CODE` | - | OTP code for first login (not recommended) |
-| `SYNOLOGY_SSL_VERIFY` | `true` | Verify SSL certificates |
+| `SYNOLOGY_SSL_VERIFY` | `false` | Verify SSL certificates (set to `true` if your NAS has a trusted/Let's Encrypt cert) |
 | `BACKEND_PORT` | `18888` | Backend API port |
 | `FRONTEND_PORT` | `8889` | Frontend web UI port |
 | `PUID` | - | User ID for file ownership (optional) |
