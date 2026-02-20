@@ -27,6 +27,10 @@ services:
       - SYNOLOGY_DEVICE_NAME=${SYNOLOGY_DEVICE_NAME:-}
       # Optional: Session expiry in seconds (default: 518400 = 6 days)
       - SYNOLOGY_SESSION_EXPIRY_SECS=${SYNOLOGY_SESSION_EXPIRY_SECS:-518400}
+      # Optional: SSL certificate verification for NAS connection
+      # Set to true only if your NAS has a trusted/Let's Encrypt certificate
+      # Leave as false (default) if using Synology's self-signed certificate
+      - SYNOLOGY_SSL_VERIFY=${SYNOLOGY_SSL_VERIFY:-false}
       # Web UI Authentication (leave empty to use Setup Wizard)
       - APP_USERNAME=${APP_USERNAME}
       - APP_PASSWORD=${APP_PASSWORD}
