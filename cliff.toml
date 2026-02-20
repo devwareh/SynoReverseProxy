@@ -33,7 +33,7 @@ commit_parsers = [
   { message = "^chore", group = "Other Changes" },
 ]
 protect_breaking_commits = false
-filter_commits = false
+filter_commits = true
 tag_pattern = "v[0-9].*"
 skip_tags = ""
 ignore_tags = ""
