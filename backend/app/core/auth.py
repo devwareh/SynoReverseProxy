@@ -30,6 +30,11 @@ def get_new_session(device_id: Optional[str] = None, otp_code: Optional[str] = N
         Dictionary containing sid, did, synotoken, and expiry_time
     """
     settings = get_settings()
+    if not settings.synology_ssl_verify:
+        _logger.warning(
+            "SSL certificate verification disabled (SYNOLOGY_SSL_VERIFY=false). "
+            "Set SYNOLOGY_SSL_VERIFY=true if your NAS has a trusted certificate."
+        )
     login_url = f"{settings.synology_nas_url}/webapi/entry.cgi"
     params = {
         "api": "SYNO.API.Auth",
