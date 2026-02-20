@@ -113,3 +113,4 @@ scripts/build-on-nas.sh
 # Codex agent metadata (local-only)
 AGENTS.md
 skills/
+docs/plans/*
