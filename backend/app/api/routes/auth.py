@@ -17,7 +17,7 @@ from app.core.web_auth import (
     record_failed_attempt,
     clear_failed_attempts
 )
-from app.utils.encryption import load_session, save_session
+from app.utils.encryption import load_session
 
 _logger = logging.getLogger(__name__)
 
