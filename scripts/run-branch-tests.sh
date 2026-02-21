@@ -132,3 +132,20 @@ else
 fi
 rm -f "$PYTEST_OUTPUT"
 rm -rf "$CONFIG_TMP" "$DATA_TMP"
+
+# ── Phase 3: Frontend tests ──────────────────────────────────────────────────
+echo ""
+echo "==> Phase 3: Frontend tests (npm test)"
+
+if docker run --rm \
+    -v "$REPO_ROOT/frontend:/app" \
+    -w /app \
+    --env CI=true \
+    node:18-alpine \
+    sh -c "npm ci --silent && npm test -- --watchAll=false --passWithNoTests"; then
+  echo "  ✓ Frontend tests passed"
+  pass "frontend_tests"
+else
+  echo "  ✗ Frontend tests failed"
+  fail "frontend_tests"
+fi
