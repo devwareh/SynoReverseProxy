@@ -11,8 +11,15 @@ FRONTEND_IMAGE="syno-test-frontend"
 BACKEND_PORT="${BACKEND_PORT:-18888}"
 FRONTEND_PORT="${FRONTEND_PORT:-8889}"
 
-# Result tracking
-declare -A RESULTS
+# Result tracking (bash 3.x compatible — no associative arrays)
+RESULT_build_backend="SKIP"
+RESULT_build_frontend="SKIP"
+RESULT_unit_tests="SKIP"
+RESULT_frontend_tests="SKIP"
+RESULT_stack_launch="SKIP"
+RESULT_health_checks="SKIP"
+RESULT_nas_smoke="SKIP"
+
 PHASES=(
   "build_backend"
   "build_frontend"
@@ -23,8 +30,9 @@ PHASES=(
   "nas_smoke"
 )
 
-pass() { RESULTS["$1"]="PASS"; }
-fail() { RESULTS["$1"]="FAIL"; }
+pass() { eval "RESULT_${1}=PASS"; }
+fail() { eval "RESULT_${1}=FAIL"; }
+get_result() { eval "echo \"\$RESULT_${1}\""; }
 
 cleanup() {
   echo ""
@@ -65,4 +73,37 @@ if [ -n "$NAS_HOST" ]; then
   else
     echo "  ⚠ NAS not reachable — Phase 6 (NAS smoke) will likely fail"
   fi
+fi
+
+# ── Phase 1: Build images from source ──────────────────────────────────────
+echo ""
+echo "==> Phase 1: Build Docker images from source"
+
+echo "  Building backend..."
+if docker build -q \
+    --build-arg BACKEND_PORT="${BACKEND_PORT}" \
+    -t "$BACKEND_IMAGE" \
+    "$REPO_ROOT/backend"; then
+  echo "  ✓ Backend image built: $BACKEND_IMAGE"
+  pass "build_backend"
+else
+  echo "  ✗ Backend build failed"
+  fail "build_backend"
+  echo "  Cannot proceed without backend image."
+  exit 1
+fi
+
+echo "  Building frontend..."
+if docker build -q \
+    --build-arg BACKEND_PORT="${BACKEND_PORT}" \
+    --build-arg NGINX_PORT="${FRONTEND_PORT}" \
+    -t "$FRONTEND_IMAGE" \
+    "$REPO_ROOT/frontend"; then
+  echo "  ✓ Frontend image built: $FRONTEND_IMAGE"
+  pass "build_frontend"
+else
+  echo "  ✗ Frontend build failed"
+  fail "build_frontend"
+  echo "  Cannot proceed without frontend image."
+  exit 1
 fi
