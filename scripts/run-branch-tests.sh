@@ -74,14 +74,19 @@ if [ -n "$NAS_HOST" ]; then
   else
     echo "  ⚠ NAS not reachable from host — Phase 6 (NAS smoke) will be skipped"
   fi
-  # Check NAS reachability from inside a container (Docker Desktop on macOS may block LAN access)
-  if docker run --rm "$BACKEND_IMAGE" \
-      python3 -c "import socket; s=socket.socket(); s.settimeout(3); r=s.connect_ex(('${NAS_HOST}', ${NAS_PORT:-5000})); s.close(); exit(r)" \
-      > /dev/null 2>&1; then
-    echo "  ✓ NAS reachable from container — Phase 6 will run"
-    NAS_ACCESSIBLE_FROM_CONTAINER=true
+  # Check NAS reachability from inside a container (Docker Desktop on macOS may block LAN access).
+  # Only run if backend image exists (it is built in Phase 1).
+  if docker image inspect "$BACKEND_IMAGE" > /dev/null 2>&1; then
+    if docker run --rm "$BACKEND_IMAGE" \
+        python3 -c "import socket; s=socket.socket(); s.settimeout(3); r=s.connect_ex(('${NAS_HOST}', ${NAS_PORT:-5000})); s.close(); exit(r)" \
+        > /dev/null 2>&1; then
+      echo "  ✓ NAS reachable from container — Phase 6 will run"
+      NAS_ACCESSIBLE_FROM_CONTAINER=true
+    else
+      echo "  ⚠ NAS not reachable from inside Docker — Phase 6 (NAS smoke) will be skipped"
+    fi
   else
-    echo "  ⚠ NAS not reachable from inside Docker — Phase 6 (NAS smoke) will be skipped"
+    echo "  ⚠ Backend image not built yet — Phase 6 (NAS smoke) will be skipped"
   fi
 fi
 

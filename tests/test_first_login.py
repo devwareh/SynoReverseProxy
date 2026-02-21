@@ -5,7 +5,7 @@ to appropriate HTTP responses and error messages, especially distinguishing
 between credential errors and 2FA/OTP errors.
 """
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from fastapi import HTTPException
 import sys
 import os
@@ -17,9 +17,23 @@ from app.api.routes.auth import first_login, FirstLoginRequest
 from app.core.auth import SynologyAuthError
 
 
+def _fake_request():
+    """Minimal Request-like object for first_login (rate limit keyed by client IP)."""
+    m = MagicMock()
+    m.client = MagicMock()
+    m.client.host = "127.0.0.1"
+    return m
+
+
 def _syno_err(code):
     """Helper: build a SynologyAuthError for a given Synology error code."""
     return SynologyAuthError(error_code=code, raw_response={'success': False, 'error': {'code': code}})
+
+
+@pytest.fixture(autouse=True)
+def _rate_limit_passed(monkeypatch):
+    """Disable rate limiting in first_login so tests do not get 429."""
+    monkeypatch.setattr('app.api.routes.auth.check_rate_limit', lambda _: True)
 
 
 class TestSynologyErrorCode400:
@@ -35,7 +49,7 @@ class TestSynologyErrorCode400:
         request = FirstLoginRequest(otp_code=None)
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 401, (
             "Error code 400 from Synology should return HTTP 401 (invalid credentials)"
@@ -56,7 +70,7 @@ class TestSynologyErrorCode400:
         request = FirstLoginRequest(otp_code="123456")
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 401
         detail = exc_info.value.detail
@@ -75,7 +89,7 @@ class TestSynologyErrorCode401:
         request = FirstLoginRequest(otp_code=None)
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 401
         detail = exc_info.value.detail
@@ -95,7 +109,7 @@ class TestSynologyErrorCode403:
         request = FirstLoginRequest(otp_code=None)
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 400
         detail = exc_info.value.detail
@@ -111,7 +125,7 @@ class TestSynologyErrorCode403:
         request = FirstLoginRequest(otp_code="wrong_otp")
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 400
         detail = exc_info.value.detail
@@ -130,7 +144,7 @@ class TestSynologyErrorCode404:
         request = FirstLoginRequest(otp_code="123456")
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 400
         detail = exc_info.value.detail
@@ -154,7 +168,7 @@ class TestSuccessfulLogin:
         }
 
         request = FirstLoginRequest(otp_code=None)
-        response = first_login(request)
+        response = first_login(request, _fake_request())
 
         assert response['success'] is True
         assert response['requires_otp'] is False
@@ -172,7 +186,7 @@ class TestSuccessfulLogin:
         }
 
         request = FirstLoginRequest(otp_code="123456")
-        response = first_login(request)
+        response = first_login(request, _fake_request())
 
         assert response['success'] is True
         assert response['requires_otp'] is False
@@ -195,7 +209,7 @@ class TestDeviceTokenFastPath:
         mock_is_valid.return_value = True
 
         request = FirstLoginRequest(otp_code=None)
-        response = first_login(request)
+        response = first_login(request, _fake_request())
 
         assert response['success'] is True
         assert response['device_token_saved'] is True
@@ -215,7 +229,7 @@ class TestSynologyErrorCode402:
         request = FirstLoginRequest(otp_code=None)
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 403
         detail = exc_info.value.detail
@@ -235,7 +249,7 @@ class TestSynologyErrorCode406:
         request = FirstLoginRequest(otp_code=None)
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 400
         detail = exc_info.value.detail
@@ -255,7 +269,7 @@ class TestSynologyErrorCode407:
         request = FirstLoginRequest(otp_code=None)
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 403
         detail = exc_info.value.detail
@@ -275,7 +289,7 @@ class TestSynologyPasswordExpiry:
         request = FirstLoginRequest(otp_code=None)
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 401
         detail = exc_info.value.detail
@@ -291,7 +305,7 @@ class TestSynologyPasswordExpiry:
         request = FirstLoginRequest(otp_code=None)
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 401
         detail = exc_info.value.detail
@@ -307,7 +321,7 @@ class TestSynologyPasswordExpiry:
         request = FirstLoginRequest(otp_code=None)
 
         with pytest.raises(HTTPException) as exc_info:
-            first_login(request)
+            first_login(request, _fake_request())
 
         assert exc_info.value.status_code == 401
         detail = exc_info.value.detail
@@ -325,7 +339,7 @@ class TestErrorClassificationLogic:
         mock_load.return_value = None
         mock_get.side_effect = _syno_err(400)
         with pytest.raises(HTTPException) as exc_info:
-            first_login(FirstLoginRequest(otp_code=None))
+            first_login(FirstLoginRequest(otp_code=None), _fake_request())
         assert exc_info.value.detail['requires_otp'] is False
 
     @pytest.mark.parametrize("code", [403, 404, 406])
@@ -336,7 +350,7 @@ class TestErrorClassificationLogic:
         mock_load.return_value = None
         mock_get.side_effect = _syno_err(code)
         with pytest.raises(HTTPException) as exc_info:
-            first_login(FirstLoginRequest(otp_code=None))
+            first_login(FirstLoginRequest(otp_code=None), _fake_request())
         assert exc_info.value.detail['requires_otp'] is True
 
     @pytest.mark.parametrize("code", [400, 401, 402, 407, 408, 409, 410])
@@ -347,7 +361,7 @@ class TestErrorClassificationLogic:
         mock_load.return_value = None
         mock_get.side_effect = _syno_err(code)
         with pytest.raises(HTTPException) as exc_info:
-            first_login(FirstLoginRequest(otp_code=None))
+            first_login(FirstLoginRequest(otp_code=None), _fake_request())
         assert exc_info.value.detail['requires_otp'] is False
 
     @patch('app.api.routes.auth.get_new_session')
@@ -359,7 +373,22 @@ class TestErrorClassificationLogic:
             error_code=None, raw_response={'success': False}
         )
         with pytest.raises(HTTPException) as exc_info:
-            first_login(FirstLoginRequest(otp_code=None))
+            first_login(FirstLoginRequest(otp_code=None), _fake_request())
         assert exc_info.value.status_code == 400
         assert 'unknown' in exc_info.value.detail['message'].lower()
         assert exc_info.value.detail['requires_otp'] is None
+
+
+class TestFirstLoginRateLimit:
+    """Rate limiting on /auth/first-login to prevent OTP brute-force."""
+
+    @patch('app.api.routes.auth.check_rate_limit', return_value=False)
+    @patch('app.api.routes.auth.load_session')
+    def test_first_login_returns_429_when_rate_limited(self, mock_load, mock_rate_limit):
+        """When rate limit is exceeded, first_login returns 429 without calling NAS."""
+        mock_load.return_value = None
+        with pytest.raises(HTTPException) as exc_info:
+            first_login(FirstLoginRequest(otp_code="123456"), _fake_request())
+        assert exc_info.value.status_code == 429
+        assert "too many" in exc_info.value.detail["message"].lower()
+        mock_rate_limit.assert_called_once()

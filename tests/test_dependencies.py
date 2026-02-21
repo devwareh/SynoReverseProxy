@@ -32,3 +32,24 @@ def test_get_mgr_raises_401_when_device_token_rejected(
 
     assert exc_info.value.status_code == 401
     assert exc_info.value.detail.get('requires_first_login') is True
+
+
+@patch('app.api.dependencies.get_new_session')
+@patch('app.api.dependencies.is_session_valid')
+@patch('app.api.dependencies.load_session')
+def test_get_mgr_raises_401_when_synology_error_code_none(
+    mock_load, mock_valid, mock_new_session
+):
+    """get_mgr must return 401 when NAS returns error with no code (error_code=None)."""
+    from app.api.dependencies import get_mgr
+    mock_load.return_value = _make_stale_session()
+    mock_valid.return_value = False
+    mock_new_session.side_effect = SynologyAuthError(
+        error_code=None, raw_response={'success': False, 'error': {}}
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        get_mgr()
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail.get('requires_first_login') is True

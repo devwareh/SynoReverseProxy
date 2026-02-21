@@ -3,7 +3,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Response, Request, Cookie
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict, Tuple
 from app.core.auth import is_session_valid, get_new_session, SynologyAuthError
 from app.core.config import get_settings
 from app.core.web_auth import (
@@ -28,7 +28,7 @@ SESSION_COOKIE_NAME = "web_session_id"
 
 # Dispatch table: Synology DSM error code → (http_status, error_label, user_message, requires_otp)
 # Reference: DSM Login Web API Guide (codes 400-410)
-_SYNO_ERRORS: dict[int, tuple[int, str, str, bool]] = {
+_SYNO_ERRORS: Dict[int, Tuple[int, str, str, bool]] = {
     400: (401, "Invalid credentials",
           "Username or password is incorrect. Please check your credentials.", False),
     401: (401, "Account disabled",
@@ -78,16 +78,20 @@ class SetupRequest(BaseModel):
 
 
 @router.post("/first-login")
-def first_login(request: FirstLoginRequest):
+def first_login(request: FirstLoginRequest, client_request: Request):
     """
     Perform first-time authentication with optional OTP.
-    
-    This endpoint handles both 2FA-enabled users (with OTP) and non-2FA users (without OTP).
+
+    This endpoint is unauthenticated: it uses server-side NAS credentials to obtain
+    a device token. Rate limiting is applied by client IP to prevent OTP brute-force.
+
+    Handles both 2FA-enabled users (with OTP) and non-2FA users (without OTP).
     After successful login, the device token is saved for future logins.
-    
+
     Args:
         request: FirstLoginRequest with optional otp_code
-        
+        client_request: Request (for client IP rate limiting)
+
     Returns:
         Success message with device token status
     """
@@ -104,23 +108,39 @@ def first_login(request: FirstLoginRequest):
                     "device_token_saved": True,
                     "requires_otp": False
                 }
-        
+
+        # Rate limit by client IP to prevent OTP brute-force
+        client_ip = client_request.client.host if client_request.client else "unknown"
+        rate_limit_id = f"first_login:{client_ip}"
+        if not check_rate_limit(rate_limit_id):
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "success": False,
+                    "error": "Too many attempts",
+                    "message": "Too many login attempts. Please try again later.",
+                    "requires_otp": None,
+                }
+            )
+
         # Attempt first login with optional OTP
         try:
             # Try login with OTP if provided, or without OTP if not provided
             session_data = get_new_session(otp_code=request.otp_code)
-            
+
             # Success - device token should be saved
             device_token_saved = session_data.get('did') is not None
-            
+            clear_failed_attempts(rate_limit_id)
+
             return {
                 "success": True,
                 "message": "First login successful. Device token saved." if device_token_saved else "First login successful.",
                 "device_token_saved": device_token_saved,
                 "requires_otp": False
             }
-            
+
         except SynologyAuthError as auth_err:
+            record_failed_attempt(rate_limit_id)
             error_code = auth_err.error_code
             _logger.warning(
                 "/first-login NAS auth failed: code=%s otp_provided=%s",
@@ -184,7 +204,6 @@ def first_login(request: FirstLoginRequest):
                 "message": f"An unexpected error occurred: {str(e)}"
             }
         )
-
 
 
 @router.post("/login")
