@@ -13,6 +13,9 @@ data/
 config/.web_auth.json
 .web_auth.json
 
+# Runtime-generated backend config directory (created by start.sh; contains copied .env and auth state)
+backend/config/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -79,6 +82,10 @@ docker-compose.override.yaml
 *.temp
 *.bak
 *.backup
+# Any file with .backup. anywhere in its name (e.g. .web_auth.json.backup.20260218_123456).
+# NOTE: intentionally broad — also covers tool-generated files like schema.backup.sql.
+# That is acceptable: no legitimate tracked file in this repo contains .backup. in its name.
+*.backup.*
 *.old
 *.orig
 *.save
@@ -106,3 +113,4 @@ scripts/build-on-nas.sh
 # Codex agent metadata (local-only)
 AGENTS.md
 skills/
+docs/plans/*

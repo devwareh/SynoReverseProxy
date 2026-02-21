@@ -196,6 +196,23 @@ fi
 cd ..
 echo ""
 
+# Sync the user-facing config/.env → backend/config/.env so the Python backend
+# always reads the same credentials that start.sh (and the user) configured.
+# This is necessary because uvicorn runs from the backend/ subdirectory and
+# Python resolves config paths relative to that directory.
+if [ -f "$PROJECT_ROOT/config/.env" ]; then
+    if mkdir -p "$PROJECT_ROOT/backend/config" && \
+       cp "$PROJECT_ROOT/config/.env" "$PROJECT_ROOT/backend/config/.env" && \
+       chmod 600 "$PROJECT_ROOT/backend/config/.env"; then
+        echo -e "${GREEN}✓ Synced config/.env → backend/config/.env (mode 600)${NC}"
+    else
+        echo -e "${RED}✗ Failed to sync config/.env to backend/config/.env${NC}"
+        echo -e "${RED}  Check disk space and directory permissions, then retry.${NC}"
+        exit 1
+    fi
+fi
+echo ""
+
 # Start backend server
 echo -e "${BLUE}Starting backend server on port ${BACKEND_PORT}...${NC}"
 cd "$PROJECT_ROOT/backend"

@@ -1,5 +1,5 @@
 // Refactored App.js using modern component architecture
-import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
+import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback, lazy, Suspense, useRef } from "react";
 import { FiPlus, FiX, FiSearch, FiShield, FiGlobe, FiDownload, FiUpload, FiTrash2, FiArrowUp, FiArrowDown, FiLayers, FiCheckCircle, FiLogOut, FiLock } from "react-icons/fi";
 import useRules from "./hooks/useRules";
 import useNotifications from "./hooks/useNotifications";
@@ -66,12 +66,56 @@ function App() {
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
 
-  // Check for auth errors
-  useEffect(() => {
-    if ((rulesError && rulesError.includes("authentication")) || rulesError?.includes("401")) {
-      setShowFirstLogin(true);
+  // Prevents duplicate probe calls while one is already in-flight
+  const authProbeInProgress = useRef(false);
+
+  // Mirrors showFirstLogin state for reads inside useCallback without triggering re-creation.
+  // useLayoutEffect (not useEffect) ensures the ref is updated synchronously during the
+  // render commit, so probeAuthentication always sees the current value regardless of
+  // how future effects in this component are ordered.
+  const showFirstLoginRef = useRef(false);
+  useLayoutEffect(() => { showFirstLoginRef.current = showFirstLogin; }, [showFirstLogin]);
+
+  // Guards against setState calls after the component unmounts
+  const isMountedRef = useRef(true);
+  useEffect(() => () => { isMountedRef.current = false; }, []);
+
+  // Probe the NAS without an OTP to detect whether 2FA is required.
+  // Synology error 403/406 → backend returns requires_otp:true → show popup.
+  // Any other success → non-2FA account silently authenticated, no popup needed.
+  const probeAuthentication = useCallback(async () => {
+    if (authProbeInProgress.current || showFirstLoginRef.current) return;
+    authProbeInProgress.current = true;
+    try {
+      // Pass null as OTP sentinel — succeeds immediately for non-2FA accounts
+      const res = await authAPI.firstLogin(null);
+      if (res.data.success && isMountedRef.current) {
+        showNotification(res.data.message || "Authentication successful!", "success");
+        await fetchRules();
+      }
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      const detail = err.response?.data?.detail || {};
+      if (detail.requires_otp === true) {
+        // Synology confirmed 2FA is required (error 403 or 406) — show the OTP popup
+        setShowFirstLogin(true);
+      } else {
+        // Invalid credentials, IP blocked, account disabled, etc.
+        showNotification(detail.message || "Authentication failed. Please check your configuration.", "error");
+      }
+    } finally {
+      authProbeInProgress.current = false;
     }
-  }, [rulesError]);
+  }, [showNotification, fetchRules]);
+
+  // When the rules fetch fails with an auth error, trigger the NAS probe
+  useEffect(() => {
+    const needsAuth =
+      rulesError && (rulesError.includes("authentication") || rulesError.includes("401"));
+    if (needsAuth) {
+      probeAuthentication();
+    }
+  }, [rulesError, probeAuthentication]);
 
   // Filter and sort rules based on search and sort settings
   const filteredRules = useMemo(() => {
@@ -134,7 +178,9 @@ function App() {
         await fetchRules();
       }
     } catch (err) {
-      showNotification(err.response?.data?.detail || "First login failed", "error");
+      const detail = err.response?.data?.detail;
+      const msg = (detail && typeof detail === 'object' ? detail.message || detail.error : detail) || "First login failed";
+      showNotification(msg, "error");
     } finally {
       setFirstLoginLoading(false);
     }
@@ -386,6 +432,7 @@ function App() {
       }
       if (showFirstLogin) {
         setShowFirstLogin(false);
+        setOtpCode("");
       }
     },
   }, [showForm, confirmDialog, showFirstLogin]);
@@ -479,37 +526,37 @@ function App() {
             <Suspense fallback={<LoadingState message="Loading..." />}>
               <Modal
                 isOpen={showFirstLogin}
-                onClose={() => setShowFirstLogin(false)}
+                onClose={() => { setShowFirstLogin(false); setOtpCode(""); }}
                 title={
                   <>
-                    <FiShield /> First-Time Setup Required
+                    <FiShield /> 2FA Authentication Required
                   </>
                 }
                 footer={
                   <>
-                    <Button variant="secondary" onClick={() => setShowFirstLogin(false)} disabled={firstLoginLoading}>
+                    <Button variant="secondary" onClick={() => { setShowFirstLogin(false); setOtpCode(""); }} disabled={firstLoginLoading}>
                       Cancel
                     </Button>
-                    <Button variant="primary" onClick={handleFirstLogin} loading={firstLoginLoading}>
+                    <Button variant="primary" onClick={handleFirstLogin} loading={firstLoginLoading} disabled={firstLoginLoading || otpCode.trim().length === 0}>
                       Authenticate
                     </Button>
                   </>
                 }
               >
-                <p>This is your first time using the application. You need to perform an initial authentication to establish a device token.</p>
-                <p className="modal-note-text">
-                  <strong>Note:</strong> If your Synology account has 2FA enabled, you'll need to provide an OTP code. Otherwise, you can leave it empty.
-                </p>
+                <p>Your Synology account has two-factor authentication enabled. Please enter the current OTP code from your authenticator app to complete setup.</p>
                 <Input
-                  label="OTP Code (Optional - only if 2FA is enabled)"
+                  label="OTP Code"
                   id="otp-code"
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  required
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value)}
-                  placeholder="Enter 6-digit OTP code (or leave empty if no 2FA)"
+                  placeholder="Enter 6-digit OTP code"
                   maxLength={6}
                   onKeyPress={(e) => {
-                    if (e.key === "Enter" && !firstLoginLoading) {
+                    if (e.key === "Enter" && !firstLoginLoading && otpCode.trim().length > 0) {
                       handleFirstLogin();
                     }
                   }}

@@ -1,8 +1,10 @@
 """API routes for authentication."""
+import logging
+
 from fastapi import APIRouter, HTTPException, Response, Request, Cookie
 from pydantic import BaseModel
-from typing import Optional
-from app.core.auth import is_session_valid
+from typing import Optional, Dict, Tuple
+from app.core.auth import is_session_valid, get_new_session, SynologyAuthError
 from app.core.config import get_settings
 from app.core.web_auth import (
     verify_web_credentials,
@@ -17,10 +19,37 @@ from app.core.web_auth import (
 )
 from app.utils.encryption import load_session, save_session
 
+_logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 # Cookie name for web session
 SESSION_COOKIE_NAME = "web_session_id"
+
+# Dispatch table: Synology DSM error code → (http_status, error_label, user_message, requires_otp)
+# Reference: DSM Login Web API Guide (codes 400-410)
+_SYNO_ERRORS: Dict[int, Tuple[int, str, str, bool]] = {
+    400: (401, "Invalid credentials",
+          "Username or password is incorrect. Please check your credentials.", False),
+    401: (401, "Account disabled",
+          "This account has been disabled. Please contact your administrator.", False),
+    402: (403, "Permission denied",
+          "This account does not have permission to access the API.", False),
+    403: (400, "2FA authentication required",
+          "Your account requires 2-factor authentication. Please provide an OTP code.", True),
+    404: (400, "Invalid OTP code",
+          "The provided OTP code is incorrect or expired. Please generate a new OTP code and try again.", True),
+    406: (400, "2FA authentication required",
+          "Your account requires 2-factor authentication. Please provide an OTP code.", True),
+    407: (403, "IP blocked",
+          "Your IP address has been blocked. Please contact your administrator.", False),
+    408: (401, "Password expired",
+          "Your password has expired and cannot be changed through this interface. Please contact your administrator.", False),
+    409: (401, "Password expired",
+          "Your password has expired. Please change it through DSM before using this application.", False),
+    410: (401, "Password change required",
+          "You must change your password through DSM before using this application.", False),
+}
 
 
 class FirstLoginRequest(BaseModel):
@@ -49,16 +78,20 @@ class SetupRequest(BaseModel):
 
 
 @router.post("/first-login")
-def first_login(request: FirstLoginRequest):
+def first_login(request: FirstLoginRequest, client_request: Request):
     """
     Perform first-time authentication with optional OTP.
-    
-    This endpoint handles both 2FA-enabled users (with OTP) and non-2FA users (without OTP).
+
+    This endpoint is unauthenticated: it uses server-side NAS credentials to obtain
+    a device token. Rate limiting is applied by client IP to prevent OTP brute-force.
+
+    Handles both 2FA-enabled users (with OTP) and non-2FA users (without OTP).
     After successful login, the device token is saved for future logins.
-    
+
     Args:
         request: FirstLoginRequest with optional otp_code
-        
+        client_request: Request (for client IP rate limiting)
+
     Returns:
         Success message with device token status
     """
@@ -75,216 +108,63 @@ def first_login(request: FirstLoginRequest):
                     "device_token_saved": True,
                     "requires_otp": False
                 }
-        
+
+        # Rate limit by client IP to prevent OTP brute-force
+        client_ip = client_request.client.host if client_request.client else "unknown"
+        rate_limit_id = f"first_login:{client_ip}"
+        if not check_rate_limit(rate_limit_id):
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "success": False,
+                    "error": "Too many attempts",
+                    "message": "Too many login attempts. Please try again later.",
+                    "requires_otp": None,
+                }
+            )
+
         # Attempt first login with optional OTP
         try:
             # Try login with OTP if provided, or without OTP if not provided
-            session_data = get_new_session_with_otp(otp_code=request.otp_code)
-            
+            session_data = get_new_session(otp_code=request.otp_code)
+
             # Success - device token should be saved
             device_token_saved = session_data.get('did') is not None
-            
+            clear_failed_attempts(rate_limit_id)
+
             return {
                 "success": True,
                 "message": "First login successful. Device token saved." if device_token_saved else "First login successful.",
                 "device_token_saved": device_token_saved,
                 "requires_otp": False
             }
-            
-        except Exception as login_error:
-            error_str = str(login_error).lower()
-            error_code = None
-            error_message = None
-            
-            # Try to parse error from login response
-            if "login failed" in error_str:
-                # Try to extract error details from the exception message
-                try:
-                    import re
-                    import ast
-                    
-                    # Try to extract the error dict from the exception string
-                    # Format: "Login failed: {'error': {'code': 401, ...}}"
-                    error_match = re.search(r'\{.*\}', str(login_error), re.DOTALL)
-                    if error_match:
-                        try:
-                            error_dict = ast.literal_eval(error_match.group(0))
-                            if isinstance(error_dict, dict):
-                                # Check for nested error structure
-                                if 'error' in error_dict:
-                                    error_info = error_dict['error']
-                                    if isinstance(error_info, dict):
-                                        error_code = error_info.get('code')
-                                        error_message = error_info.get('message') or error_info.get('errors')
-                                elif 'code' in error_dict:
-                                    error_code = error_dict.get('code')
-                                    error_message = error_dict.get('message')
-                        except (ValueError, SyntaxError):
-                            # Try regex extraction as fallback
-                            code_match = re.search(r'"code":\s*(\d+)', str(login_error))
-                            if code_match:
-                                error_code = int(code_match.group(1))
-                except Exception:
-                    pass
-            
-            # Handle specific Synology API error codes
-            # Reference: https://global.download.synology.com/download/Document/Software/DeveloperGuide/Os/DSM/All/enu/DSM_Login_Web_API_Guide_enu.pdf
-            
-            # 400 = No such account or incorrect password
-            if error_code == 400:
-                raise HTTPException(
-                    status_code=401,
-                    detail={
-                        "success": False,
-                        "error": "Invalid credentials",
-                        "message": "Username or password is incorrect. Please check your credentials.",
-                        "requires_otp": False
-                    }
-                )
-            
-            # 401 = Disabled account
-            if error_code == 401:
-                raise HTTPException(
-                    status_code=401,
-                    detail={
-                        "success": False,
-                        "error": "Account disabled",
-                        "message": "This account has been disabled. Please contact your administrator.",
-                        "requires_otp": False
-                    }
-                )
-            
-            # 402 = Denied permission
-            if error_code == 402:
-                raise HTTPException(
-                    status_code=403,
-                    detail={
-                        "success": False,
-                        "error": "Permission denied",
-                        "message": "This account does not have permission to access the API.",
-                        "requires_otp": False
-                    }
-                )
-            
-            # 407 = Blocked IP source
-            if error_code == 407:
-                raise HTTPException(
-                    status_code=403,
-                    detail={
-                        "success": False,
-                        "error": "IP blocked",
-                        "message": "Your IP address has been blocked. Please contact your administrator.",
-                        "requires_otp": False
-                    }
-                )
-            
-            # 408 = Expired password cannot change
-            if error_code == 408:
-                raise HTTPException(
-                    status_code=401,
-                    detail={
-                        "success": False,
-                        "error": "Password expired",
-                        "message": "Your password has expired and cannot be changed through this interface. Please contact your administrator.",
-                        "requires_otp": False
-                    }
-                )
-            
-            # 409 = Expired password
-            if error_code == 409:
-                raise HTTPException(
-                    status_code=401,
-                    detail={
-                        "success": False,
-                        "error": "Password expired",
-                        "message": "Your password has expired. Please change it through DSM before using this application.",
-                        "requires_otp": False
-                    }
-                )
-            
-            # 410 = Password must be changed
-            if error_code == 410:
-                raise HTTPException(
-                    status_code=401,
-                    detail={
-                        "success": False,
-                        "error": "Password change required",
-                        "message": "You must change your password through DSM before using this application.",
-                        "requires_otp": False
-                    }
-                )
-            
-            # Check for 2FA-related errors in error message or code
-            # Synology error codes for 2FA:
-            #   403 = 2-factor authentication code required
-            #   404 = Failed to authenticate 2-factor authentication code
-            #   406 = Enforce to authenticate with 2-factor authentication code
-            is_2fa_error = (
-                error_code in [403, 404, 406] or  # 2FA error codes
-                any(keyword in error_str for keyword in [
-                    "otp", "2fa", "two-factor", "two factor", 
-                    "authentication code", "verification code",
-                    "verification", "authenticator"
-                ]) or
-                (error_message and any(keyword in str(error_message).lower() for keyword in [
-                    "otp", "2fa", "two-factor", "verification"
-                ]))
+
+        except SynologyAuthError as auth_err:
+            record_failed_attempt(rate_limit_id)
+            error_code = auth_err.error_code
+            _logger.warning(
+                "/first-login NAS auth failed: code=%s otp_provided=%s",
+                error_code, bool(request.otp_code),
             )
-            
-            # Synology error code 404 = Failed to authenticate 2FA code (invalid/expired OTP)
-            if error_code == 404:
+
+            if error_code in _SYNO_ERRORS:
+                http_status, error_label, message, requires_otp = _SYNO_ERRORS[error_code]
                 raise HTTPException(
-                    status_code=400,
+                    status_code=http_status,
                     detail={
                         "success": False,
-                        "error": "Invalid OTP code",
-                        "message": "The provided OTP code is incorrect or expired. Please generate a new OTP code and try again.",
-                        "requires_otp": True
+                        "error": error_label,
+                        "message": message,
+                        "requires_otp": requires_otp,
                     }
                 )
-            
-            # Synology error code 406 = Enforce to authenticate with 2FA code
-            if error_code == 406:
-                raise HTTPException(
-                    status_code=400,
-                    detail={
-                        "success": False,
-                        "error": "2FA authentication required",
-                        "message": "Your account requires 2-factor authentication. Please provide an OTP code.",
-                        "requires_otp": True
-                    }
-                )
-            
-            if is_2fa_error:
-                # 2FA is required but OTP was missing or incorrect
-                if not request.otp_code:
-                    raise HTTPException(
-                        status_code=400,
-                        detail={
-                            "success": False,
-                            "error": "2FA authentication required",
-                            "message": "Please provide OTP code. Your account has 2FA enabled.",
-                            "requires_otp": True
-                        }
-                    )
-                else:
-                    raise HTTPException(
-                        status_code=400,
-                        detail={
-                            "success": False,
-                            "error": "Invalid OTP code",
-                            "message": "The provided OTP code is incorrect or expired. Please generate a new OTP code and try again.",
-                            "requires_otp": True
-                        }
-                    )
-            
-            # If OTP was provided but login failed, try without OTP (might be non-2FA account)
+
+            # Unknown error code — if OTP was provided, retry without it.
+            # Guards against OTP being sent to a non-2FA account.
             if request.otp_code:
                 try:
-                    # Retry without OTP - might be a non-2FA account
-                    session_data = get_new_session_with_otp(otp_code=None)
+                    session_data = get_new_session(otp_code=None)
                     device_token_saved = session_data.get('did') is not None
-                    
                     return {
                         "success": True,
                         "message": "First login successful (2FA not enabled). Device token saved." if device_token_saved else "First login successful (2FA not enabled).",
@@ -292,28 +172,26 @@ def first_login(request: FirstLoginRequest):
                         "requires_otp": False,
                         "note": "OTP was provided but not required. Your account does not have 2FA enabled."
                     }
-                except Exception:
-                    # Both attempts failed - return generic error
+                except SynologyAuthError:
                     raise HTTPException(
                         status_code=400,
                         detail={
                             "success": False,
                             "error": "Authentication failed",
                             "message": "Login failed with and without OTP. Please verify your credentials and OTP code if 2FA is enabled.",
-                            "requires_otp": None  # Unknown
+                            "requires_otp": None,
                         }
                     )
-            else:
-                # No OTP provided, but login failed - might need OTP or invalid credentials
-                raise HTTPException(
-                    status_code=400,
-                    detail={
-                        "success": False,
-                        "error": "Authentication failed",
-                        "message": "Login failed. If your account has 2FA enabled, please provide an OTP code. Otherwise, verify your username and password.",
-                        "requires_otp": None  # Unknown, but suggest trying with OTP
-                    }
-                )
+
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "success": False,
+                    "error": "Authentication failed",
+                    "message": f"Synology login failed (error code: {error_code if error_code is not None else 'unknown'}). Please verify your credentials.",
+                    "requires_otp": None,
+                }
+            )
                 
     except HTTPException:
         raise
@@ -326,58 +204,6 @@ def first_login(request: FirstLoginRequest):
                 "message": f"An unexpected error occurred: {str(e)}"
             }
         )
-
-
-def get_new_session_with_otp(otp_code: Optional[str] = None) -> dict:
-    """
-    Helper function to get new session with optional OTP.
-    Handles both 2FA and non-2FA users.
-    """
-    settings = get_settings()
-    login_url = f"{settings.synology_nas_url}/webapi/entry.cgi"
-    params = {
-        "api": "SYNO.API.Auth",
-        "method": "login",
-        "version": "6",
-        "account": settings.synology_username,
-        "passwd": settings.synology_password,
-        "session": "Core",
-        "format": "sid",
-        "enable_syno_token": "yes",
-        "enable_device_token": "yes",  # Always try to enable device token
-        "device_name": settings.synology_device_name
-    }
-    
-    # Add OTP if provided
-    if otp_code:
-        params["otp_code"] = otp_code
-    
-    import requests
-    session = requests.Session()
-    resp = session.get(login_url, params=params, verify=settings.synology_ssl_verify)
-    resp.raise_for_status()
-    result = resp.json()
-    
-    if not result.get('success'):
-        raise Exception(f"Login failed: {result}")
-    
-    data = result["data"]
-    sid = data["sid"]
-    did = data.get("did")
-    synotoken = data.get("synotoken")
-    
-    import time
-    expiry_time = time.time() + settings.synology_session_expiry_secs
-    
-    # Save session with device token
-    save_session(sid, did, synotoken, expiry_time)
-    
-    return {
-        'sid': sid,
-        'did': did,
-        'synotoken': synotoken,
-        'expiry_time': expiry_time
-    }
 
 
 @router.post("/login")

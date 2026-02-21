@@ -50,8 +50,9 @@ class Settings:
         self.synology_device_name = os.getenv('SYNOLOGY_DEVICE_NAME') or socket.gethostname()
         self.synology_session_expiry_secs = int(os.getenv('SYNOLOGY_SESSION_EXPIRY_SECS', '518400'))
         # SSL certificate verification for Synology API connections
-        # Default to True for security, can be disabled for self-signed certs in dev
-        self.synology_ssl_verify = os.getenv('SYNOLOGY_SSL_VERIFY', 'true').lower() == 'true'
+        # Defaults to False for backward compatibility (Synology ships with self-signed certs).
+        # Set SYNOLOGY_SSL_VERIFY=true if your NAS has a trusted/Let's Encrypt certificate.
+        self.synology_ssl_verify = os.getenv('SYNOLOGY_SSL_VERIFY', 'false').lower() == 'true'
         
         # Web UI Authentication Configuration
         self.app_username = os.getenv('APP_USERNAME', 'admin')
