@@ -67,11 +67,21 @@ echo "  ✓ Docker running"
 
 NAS_HOST=$(echo "${SYNOLOGY_NAS_URL:-}" | sed 's|https\?://||' | cut -d: -f1)
 NAS_PORT=$(echo "${SYNOLOGY_NAS_URL:-}" | sed 's|.*:||')
+NAS_ACCESSIBLE_FROM_CONTAINER=false
 if [ -n "$NAS_HOST" ]; then
   if curl -s --connect-timeout 3 "${SYNOLOGY_NAS_URL}" > /dev/null 2>&1; then
-    echo "  ✓ NAS reachable at ${SYNOLOGY_NAS_URL}"
+    echo "  ✓ NAS reachable from host at ${SYNOLOGY_NAS_URL}"
   else
-    echo "  ⚠ NAS not reachable — Phase 6 (NAS smoke) will likely fail"
+    echo "  ⚠ NAS not reachable from host — Phase 6 (NAS smoke) will be skipped"
+  fi
+  # Check NAS reachability from inside a container (Docker Desktop on macOS may block LAN access)
+  if docker run --rm "$BACKEND_IMAGE" \
+      python3 -c "import socket; s=socket.socket(); s.settimeout(3); r=s.connect_ex(('${NAS_HOST}', ${NAS_PORT:-5000})); s.close(); exit(r)" \
+      > /dev/null 2>&1; then
+    echo "  ✓ NAS reachable from container — Phase 6 will run"
+    NAS_ACCESSIBLE_FROM_CONTAINER=true
+  else
+    echo "  ⚠ NAS not reachable from inside Docker — Phase 6 (NAS smoke) will be skipped"
   fi
 fi
 
@@ -160,10 +170,8 @@ version: '3.8'
 services:
   backend:
     image: ${BACKEND_IMAGE}
-    build: ~
   frontend:
     image: ${FRONTEND_IMAGE}
-    build: ~
 OVERRIDE_EOF
 
 # Export required env vars for docker-compose interpolation
@@ -218,20 +226,25 @@ fi
 echo ""
 echo "==> Phase 6: NAS smoke test (live auth)"
 
-SMOKE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
-  --connect-timeout 5 \
-  -X POST "http://localhost:${BACKEND_PORT}/auth/first-login" \
-  -H "Content-Type: application/json" \
-  -d '{}')
-
-echo "  /auth/first-login → HTTP $SMOKE_HTTP"
-
-if [[ "$SMOKE_HTTP" =~ ^(200|400|401)$ ]]; then
-  echo "  ✓ NAS smoke passed (got expected response from auth endpoint)"
-  pass "nas_smoke"
+if [ "$NAS_ACCESSIBLE_FROM_CONTAINER" != "true" ]; then
+  echo "  ⏭  Skipped — NAS not reachable from inside Docker (Docker Desktop macOS network limitation)"
+  RESULT_nas_smoke="SKIP"
 else
-  echo "  ✗ NAS smoke failed (unexpected HTTP $SMOKE_HTTP — expected 200/400/401)"
-  fail "nas_smoke"
+  SMOKE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+    --connect-timeout 5 \
+    -X POST "http://localhost:${BACKEND_PORT}/auth/first-login" \
+    -H "Content-Type: application/json" \
+    -d '{}')
+
+  echo "  /auth/first-login → HTTP $SMOKE_HTTP"
+
+  if [[ "$SMOKE_HTTP" =~ ^(200|400|401)$ ]]; then
+    echo "  ✓ NAS smoke passed (got expected response from auth endpoint)"
+    pass "nas_smoke"
+  else
+    echo "  ✗ NAS smoke failed (unexpected HTTP $SMOKE_HTTP — expected 200/400/401)"
+    fail "nas_smoke"
+  fi
 fi
 
 # ── Phase 7: Report ───────────────────────────────────────────────────────────
