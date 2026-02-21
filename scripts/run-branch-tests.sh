@@ -181,3 +181,55 @@ else
   echo "  ✗ Stack failed to start"
   fail "stack_launch"
 fi
+
+# ── Phase 5: Health checks ────────────────────────────────────────────────────
+echo ""
+echo "==> Phase 5: Health checks"
+
+wait_for_http() {
+  local url="$1"
+  local label="$2"
+  local max_wait=30
+  local interval=3
+  local elapsed=0
+  while [ $elapsed -lt $max_wait ]; do
+    if curl -s --connect-timeout 2 "$url" > /dev/null 2>&1; then
+      echo "  ✓ $label is up ($url)"
+      return 0
+    fi
+    sleep $interval
+    elapsed=$((elapsed + interval))
+  done
+  echo "  ✗ $label did not respond within ${max_wait}s ($url)"
+  return 1
+}
+
+HEALTH_PASS=true
+wait_for_http "http://localhost:${BACKEND_PORT}/" "Backend" || HEALTH_PASS=false
+wait_for_http "http://localhost:${FRONTEND_PORT}/" "Frontend" || HEALTH_PASS=false
+
+if [ "$HEALTH_PASS" = "true" ]; then
+  pass "health_checks"
+else
+  fail "health_checks"
+fi
+
+# ── Phase 6: NAS smoke test ───────────────────────────────────────────────────
+echo ""
+echo "==> Phase 6: NAS smoke test (live auth)"
+
+SMOKE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+  --connect-timeout 5 \
+  -X POST "http://localhost:${BACKEND_PORT}/auth/first-login" \
+  -H "Content-Type: application/json" \
+  -d '{}')
+
+echo "  /auth/first-login → HTTP $SMOKE_HTTP"
+
+if [[ "$SMOKE_HTTP" =~ ^(200|400|401)$ ]]; then
+  echo "  ✓ NAS smoke passed (got expected response from auth endpoint)"
+  pass "nas_smoke"
+else
+  echo "  ✗ NAS smoke failed (unexpected HTTP $SMOKE_HTTP — expected 200/400/401)"
+  fail "nas_smoke"
+fi
