@@ -107,3 +107,28 @@ else
   echo "  Cannot proceed without frontend image."
   exit 1
 fi
+
+# ── Phase 2: Backend unit tests ─────────────────────────────────────────────
+echo ""
+echo "==> Phase 2: Backend unit tests (pytest)"
+
+PYTEST_OUTPUT=$(mktemp)
+# Writable shadow dirs so tests can write without touching the source tree
+CONFIG_TMP=$(mktemp -d)
+DATA_TMP=$(mktemp -d)
+# Seed config shadow with existing config files (e.g. .web_auth.json, .env)
+find "$REPO_ROOT/backend/config" -maxdepth 1 -type f -exec cp {} "$CONFIG_TMP/" \; 2>/dev/null || true
+if docker run --rm \
+    -v "$REPO_ROOT:/app:ro" \
+    -v "$CONFIG_TMP:/app/backend/config" \
+    -v "$DATA_TMP:/app/backend/data" \
+    "$BACKEND_IMAGE" \
+    sh -c "pip install pytest --quiet && pytest tests/ -v --tb=short" 2>&1 | tee "$PYTEST_OUTPUT"; then
+  echo "  ✓ All backend tests passed"
+  pass "unit_tests"
+else
+  echo "  ✗ Backend tests failed (see output above)"
+  fail "unit_tests"
+fi
+rm -f "$PYTEST_OUTPUT"
+rm -rf "$CONFIG_TMP" "$DATA_TMP"
