@@ -233,3 +233,51 @@ else
   echo "  ✗ NAS smoke failed (unexpected HTTP $SMOKE_HTTP — expected 200/400/401)"
   fail "nas_smoke"
 fi
+
+# ── Phase 7: Report ───────────────────────────────────────────────────────────
+echo ""
+echo "==> Phase 7: Report"
+
+PHASE_LABELS=(
+  "build_backend:  Phase 1  Build (backend)    "
+  "build_frontend: Phase 1  Build (frontend)   "
+  "unit_tests:     Phase 2  Unit tests         "
+  "frontend_tests: Phase 3  Frontend tests     "
+  "stack_launch:   Phase 4  Stack launch       "
+  "health_checks:  Phase 5  Health checks      "
+  "nas_smoke:      Phase 6  NAS smoke          "
+)
+
+PASS_COUNT=0
+FAIL_COUNT=0
+
+echo ""
+echo "╔════════════════════════════════════════╗"
+echo "║        Branch Test Results             ║"
+echo "╠════════════════════════════════════════╣"
+for entry in "${PHASE_LABELS[@]}"; do
+  key="${entry%%:*}"
+  label="${entry#*:}"
+  result=$(get_result "$key")
+  if [ "$result" = "PASS" ]; then
+    echo "║  ${label}  ✅ PASS  ║"
+    PASS_COUNT=$((PASS_COUNT + 1))
+  elif [ "$result" = "FAIL" ]; then
+    echo "║  ${label}  ❌ FAIL  ║"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+  else
+    echo "║  ${label}  ⏭  SKIP  ║"
+  fi
+done
+echo "╚════════════════════════════════════════╝"
+echo ""
+if [ "$FAIL_COUNT" -eq 0 ]; then
+  echo "Overall: ✅ PASS ($PASS_COUNT/${#PHASES[@]})"
+  EXIT_CODE=0
+else
+  echo "Overall: ❌ FAIL ($PASS_COUNT passed, $FAIL_COUNT failed)"
+  EXIT_CODE=1
+fi
+
+# Teardown is handled by the trap (cleanup function)
+exit $EXIT_CODE
