@@ -149,3 +149,35 @@ else
   echo "  ✗ Frontend tests failed"
   fail "frontend_tests"
 fi
+
+# ── Phase 4: Stack launch ────────────────────────────────────────────────────
+echo ""
+echo "==> Phase 4: Stack launch"
+
+# Write override file that swaps published images for local builds
+cat > "$OVERRIDE_FILE" <<OVERRIDE_EOF
+version: '3.8'
+services:
+  backend:
+    image: ${BACKEND_IMAGE}
+    build: ~
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    build: ~
+OVERRIDE_EOF
+
+# Export required env vars for docker-compose interpolation
+export SYNOLOGY_NAS_URL SYNOLOGY_USERNAME SYNOLOGY_PASSWORD
+export BACKEND_PORT FRONTEND_PORT
+
+cd "$REPO_ROOT"
+if docker-compose \
+    -f docker-compose.yml \
+    -f "$OVERRIDE_FILE" \
+    up -d --no-build; then
+  echo "  ✓ Stack started"
+  pass "stack_launch"
+else
+  echo "  ✗ Stack failed to start"
+  fail "stack_launch"
+fi
