@@ -112,5 +112,7 @@ scripts/build-on-nas.sh
 
 # Codex agent metadata (local-only)
 AGENTS.md
+CLAUDE.md
 skills/
 docs/plans/*
+docs/GITHUB_ISSUES.md

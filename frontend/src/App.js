@@ -32,6 +32,7 @@ function App() {
     rules,
     loading,
     error: rulesError,
+    requiresFirstLogin,
     fetchRules,
     createRule,
     updateRule,
@@ -61,6 +62,7 @@ function App() {
   const [fields, setFields] = useState(DEFAULT_RULE_FIELDS);
   const [selectedRules, setSelectedRules] = useState(new Set());
   const [showFirstLogin, setShowFirstLogin] = useState(false);
+  const [isReauth, setIsReauth] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [firstLoginLoading, setFirstLoginLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -83,14 +85,17 @@ function App() {
   // Probe the NAS without an OTP to detect whether 2FA is required.
   // Synology error 403/406 → backend returns requires_otp:true → show popup.
   // Any other success → non-2FA account silently authenticated, no popup needed.
-  const probeAuthentication = useCallback(async () => {
+  const probeAuthentication = useCallback(async (reauth = false) => {
     if (authProbeInProgress.current || showFirstLoginRef.current) return;
     authProbeInProgress.current = true;
+    if (reauth) setIsReauth(true);
     try {
       // Pass null as OTP sentinel — succeeds immediately for non-2FA accounts
       const res = await authAPI.firstLogin(null);
       if (res.data.success && isMountedRef.current) {
-        showNotification(res.data.message || "Authentication successful!", "success");
+        const msg = reauth ? "Reconnected to NAS successfully!" : (res.data.message || "Authentication successful!");
+        showNotification(msg, "success");
+        setIsReauth(false);
         await fetchRules();
       }
     } catch (err) {
@@ -100,6 +105,7 @@ function App() {
         // Synology confirmed 2FA is required (error 403 or 406) — show the OTP popup
         setShowFirstLogin(true);
       } else {
+        setIsReauth(false);
         // Invalid credentials, IP blocked, account disabled, etc.
         showNotification(detail.message || "Authentication failed. Please check your configuration.", "error");
       }
@@ -108,14 +114,12 @@ function App() {
     }
   }, [showNotification, fetchRules]);
 
-  // When the rules fetch fails with an auth error, trigger the NAS probe
+  // When the rules fetch fails with a device token rejection, trigger the NAS probe for re-auth
   useEffect(() => {
-    const needsAuth =
-      rulesError && (rulesError.includes("authentication") || rulesError.includes("401"));
-    if (needsAuth) {
-      probeAuthentication();
+    if (requiresFirstLogin) {
+      probeAuthentication(true);
     }
-  }, [rulesError, probeAuthentication]);
+  }, [requiresFirstLogin, probeAuthentication]);
 
   // Filter and sort rules based on search and sort settings
   const filteredRules = useMemo(() => {
@@ -175,6 +179,7 @@ function App() {
         showNotification(res.data.message || "First login successful!", "success");
         setShowFirstLogin(false);
         setOtpCode("");
+        setIsReauth(false);
         await fetchRules();
       }
     } catch (err) {
@@ -517,7 +522,7 @@ function App() {
             onAutoClearPauseChange={setAutoClearPaused}
           />
 
-          {rulesError && !rulesError.includes("authentication") && (
+          {rulesError && !requiresFirstLogin && (
             <Notification message={rulesError} type="error" />
           )}
 
@@ -526,24 +531,27 @@ function App() {
             <Suspense fallback={<LoadingState message="Loading..." />}>
               <Modal
                 isOpen={showFirstLogin}
-                onClose={() => { setShowFirstLogin(false); setOtpCode(""); }}
+                onClose={() => { setShowFirstLogin(false); setOtpCode(""); setIsReauth(false); }}
                 title={
                   <>
-                    <FiShield /> 2FA Authentication Required
+                    <FiShield /> {isReauth ? "Re-authenticate with NAS" : "2FA Authentication Required"}
                   </>
                 }
                 footer={
                   <>
-                    <Button variant="secondary" onClick={() => { setShowFirstLogin(false); setOtpCode(""); }} disabled={firstLoginLoading}>
+                    <Button variant="secondary" onClick={() => { setShowFirstLogin(false); setOtpCode(""); setIsReauth(false); }} disabled={firstLoginLoading}>
                       Cancel
                     </Button>
                     <Button variant="primary" onClick={handleFirstLogin} loading={firstLoginLoading} disabled={firstLoginLoading || otpCode.trim().length === 0}>
-                      Authenticate
+                      {isReauth ? "Re-authenticate" : "Authenticate"}
                     </Button>
                   </>
                 }
               >
-                <p>Your Synology account has two-factor authentication enabled. Please enter the current OTP code from your authenticator app to complete setup.</p>
+                <p>{isReauth
+                  ? "Your NAS session has expired. Please enter the current OTP code from your authenticator app to reconnect."
+                  : "Your Synology account has two-factor authentication enabled. Please enter the current OTP code from your authenticator app to complete setup."
+                }</p>
                 <Input
                   label="OTP Code"
                   id="otp-code"

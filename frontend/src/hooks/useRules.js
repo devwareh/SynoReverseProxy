@@ -157,6 +157,7 @@ function useRules() {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [requiresFirstLogin, setRequiresFirstLogin] = useState(false);
   const [operations, setOperations] = useState([]);
   const [autoClearPaused, setAutoClearPausedState] = useState(false);
   const operationsRef = useRef([]);
@@ -188,6 +189,7 @@ function useRules() {
       const res = await rulesAPI.getAll();
       const entries = res.data.data?.entries || [];
       setRules(entries);
+      setRequiresFirstLogin(false);
       return { success: true, data: entries };
     } catch (err) {
       const errorDetail = err.response?.data?.detail;
@@ -199,8 +201,10 @@ function useRules() {
       } else {
         errorMsg = err.message || String(err);
       }
+      const isFirstLogin = errorDetail?.requires_first_login === true;
+      setRequiresFirstLogin(isFirstLogin);
       setError(errorMsg);
-      return { success: false, error: errorMsg, requiresAuth: err.response?.status === 401 };
+      return { success: false, error: errorMsg, requiresAuth: err.response?.status === 401, requiresFirstLogin: isFirstLogin };
     } finally {
       if (!silent) setLoading(false);
     }
@@ -697,6 +701,7 @@ function useRules() {
     rules,
     loading,
     error,
+    requiresFirstLogin,
     fetchRules,
     createRule,
     updateRule,
