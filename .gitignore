@@ -50,9 +50,11 @@ backend.log
 frontend.log
 logs/
 
-# IDE
+# IDE & AI tools
 .vscode/
 .idea/
+.claude/
+.cursor/
 *.swp
 *.swo
 *~
@@ -106,6 +108,10 @@ frontend/coverage/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Runtime config (credentials — never commit)
+config/.env
+config/.web_auth.json
 
 # Local deployment scripts (user-specific)
 scripts/build-on-nas.sh
