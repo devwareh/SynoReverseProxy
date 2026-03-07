@@ -102,46 +102,40 @@ class SynoReverseProxyManager:
             method="update",
             version="1"
         )
-        
-        # Get the existing rule to extract the _key field (required for update)
-        existing_rule = self.get_rule(rule_id)
-        if not existing_rule.get("success"):
+
+        # Fetch existing entry via list (single NAS call) to extract _key.
+        # Avoids the speculative get-probe loop in get_rule() which makes up to
+        # 4 round-trips before falling back to list anyway.
+        all_rules = self.list_rules()
+        entries = all_rules.get("data", {}).get("entries", [])
+        existing_entry = next(
+            (e for e in entries
+             if e.get("UUID") == rule_id or e.get("uuid") == rule_id or e.get("id") == rule_id),
+            None
+        )
+
+        if existing_entry is None:
             return {
                 "success": False,
                 "error": {"code": 404, "message": f"Rule with UUID {rule_id} not found"}
             }
-        
-        existing_entry = existing_rule.get("data", {}).get("entry", {})
-        
-        # Log available fields for debugging
-        logger.debug(f"Available fields in entry: {list(existing_entry.keys())}")
-        
-        # Try different possible field names for _key
-        _key = existing_entry.get("_key") or existing_entry.get("key") or existing_entry.get("_uuid")
-        
-        # If _key is still not found, the list API might not include it
-        # In that case, we might need to use UUID as _key, or fetch it differently
-        if not _key:
-            # Some Synology APIs use UUID as the key identifier
-            # Try using the UUID itself as _key
-            _key = existing_entry.get("UUID") or existing_entry.get("uuid") or rule_id
-            logger.debug(f"Using UUID as _key fallback: {_key}")
-        
-        # Final check - if still no _key, return detailed error
-        if not _key:
-            return {
-                "success": False,
-                "error": {
-                    "code": 400, 
-                    "message": f"Could not find _key in existing rule. Available fields: {list(existing_entry.keys())}"
-                }
-            }
-        
+
+        logger.debug("Available fields in entry: %s", list(existing_entry.keys()))
+
+        # Try known field names for _key; fall back to UUID if absent
+        _key = (
+            existing_entry.get("_key")
+            or existing_entry.get("key")
+            or existing_entry.get("_uuid")
+            or existing_entry.get("UUID")
+            or existing_entry.get("uuid")
+            or rule_id
+        )
+        logger.debug("Using _key: %s", _key)
+
         # Include UUID and _key in the entry data - Synology API requires both
-        rule_dict_with_uuid = rule_dict.copy()
-        rule_dict_with_uuid["UUID"] = rule_id
-        rule_dict_with_uuid["_key"] = _key
-        
+        rule_dict_with_uuid = {**rule_dict, "UUID": rule_id, "_key": _key}
+
         data = {"entry": json.dumps(rule_dict_with_uuid)}
         resp = self.session.post(self.api_url, params=params, data=data, verify=self.ssl_verify)
         resp.raise_for_status()
