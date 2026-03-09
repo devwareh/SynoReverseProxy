@@ -17,8 +17,8 @@ server {
 
     # API Reverse Proxy
     # This proxies API requests to the backend container, avoiding CORS issues.
-    # We match the top-level API routes directly.
-    location ~ ^/(auth|rules|import-export|version|docs|openapi.json) {
+    # We match the top-level API routes directly, including ACL management.
+    location ~ ^/(auth|rules|acl|import-export|version|docs|openapi.json) {
         proxy_pass http://backend:${BACKEND_PORT};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

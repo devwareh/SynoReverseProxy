@@ -60,7 +60,7 @@ echo "✅ Cleanup complete"
 
 # Build and start containers
 echo ""
-echo "Building Docker images (this may take a few minutes)..."
+echo "Building/pulling Docker images using docker-compose.yml (published images by default)..."
 docker-compose build
 
 echo ""
@@ -96,13 +96,16 @@ echo "1. Open http://localhost:${FRONTEND_PORT} in your browser"
 echo "2. If you see a 'First-Time Setup' modal, enter your OTP code (if 2FA enabled)"
 echo "3. Or use the API docs at http://localhost:${BACKEND_PORT}/docs to call /auth/first-login"
 echo ""
+echo "To build images from local source instead of using published images, run:"
+echo "  docker-compose -f docker-compose.yml -f docker-compose.build.yml up -d --build"
+echo ""
 echo "To view logs:"
 echo "  docker-compose logs -f"
 echo ""
 echo "To stop containers:"
 echo "  docker-compose down"
 echo ""
-echo "To rebuild after code changes:"
-echo "  docker-compose up -d --build"
+echo "Note: 'test-docker.sh' uses published images by default. For active development,"
+echo "      prefer the build override command above so Docker reflects your local code."
 echo ""
 

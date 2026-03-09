@@ -166,7 +166,14 @@ session file at `data/syno_session.json.enc`. If you run tests against the same
 `data/` directory that your dev instance uses, this will force a NAS
 re-authentication the next time you open the UI.
 
-To keep test runs isolated, point pytest at a separate session file, for example:
+To keep test runs isolated, point pytest at a separate session file.
+First make sure the directory exists:
+
+```bash
+mkdir -p data/test
+```
+
+Then run:
 
 ```bash
 SYNOLOGY_NAS_URL=http://localhost:5000 \
@@ -178,6 +185,35 @@ conda run -n synoenv bash -lc 'pytest tests/ -v'
 
 This uses a test-only `data/test/syno_session.json.enc` and avoids touching the
 session used by your normal dev or Docker environment.
+
+## Docker usage modes
+
+There are two main ways to run the app with Docker:
+
+1. **Use published images from GHCR (fast sanity check)**  
+   This is the default behavior of `docker-compose.yml`:
+
+   ```bash
+   docker-compose up -d
+   ```
+
+   This pulls and runs `ghcr.io/devwareh/syno-reverse-proxy-backend:latest` and
+   `ghcr.io/devwareh/syno-reverse-proxy-frontend:latest`. Use this when you want
+   to quickly verify that a released version works against your NAS.
+
+2. **Build images from local source (when developing)**  
+   To test your local changes (backend or frontend) in Docker, use the build
+   override file:
+
+   ```bash
+   docker-compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+   ```
+
+   This builds the backend and frontend images from the current working tree and
+   starts containers with those images. Use this when iterating on features or
+   fixes and you want Docker to reflect your local code instead of the last
+   published images.
+
 
 ## Viewing Logs
 
