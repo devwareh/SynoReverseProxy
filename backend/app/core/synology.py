@@ -161,6 +161,71 @@ class SynoReverseProxyManager:
         result = resp.json()
         return result
 
+    # ------------------------------------------------------------------
+    # ACL Profile methods  (SYNO.Core.AppPortal.AccessControl)
+    # ------------------------------------------------------------------
+
+    def list_acl_profiles(self) -> Dict[str, Any]:
+        """List all ACL profiles."""
+        payload = self._get_params(
+            api="SYNO.Core.AppPortal.AccessControl",
+            method="list",
+            version="1",
+        )
+        resp = self.session.get(self.api_url, params=payload, verify=self.ssl_verify)
+        resp.raise_for_status()
+        return resp.json()
+
+    def create_acl_profile(self, name: str, rules: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Create a new ACL profile."""
+        params = self._get_params(
+            api="SYNO.Core.AppPortal.AccessControl",
+            method="create",
+            version="1",
+        )
+        entry = {"name": name, "rules": rules}
+        data = {"entry": json.dumps(entry)}
+        resp = self.session.post(self.api_url, params=params, data=data, verify=self.ssl_verify)
+        resp.raise_for_status()
+        return resp.json()
+
+    def update_acl_profile(self, uuid: str, name: str, rules: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Update an existing ACL profile. Fetches _key from list first."""
+        try:
+            all_profiles = self.list_acl_profiles()
+        except Exception as e:
+            logger.error("Failed to fetch ACL profiles during update (uuid=%s): %s", uuid, e)
+            raise RuntimeError(f"Cannot update ACL profile: failed to fetch existing profiles") from None
+        entries = all_profiles.get("data", {}).get("entries", [])
+        existing = next((e for e in entries if e.get("UUID") == uuid), None)
+
+        if existing is None:
+            return {"success": False, "error": {"code": 404, "message": f"ACL profile {uuid} not found"}}
+
+        _key = existing.get("_key") or uuid
+        params = self._get_params(
+            api="SYNO.Core.AppPortal.AccessControl",
+            method="update",
+            version="1",
+        )
+        entry = {"UUID": uuid, "_key": _key, "name": name, "rules": rules}
+        data = {"entry": json.dumps(entry)}
+        resp = self.session.post(self.api_url, params=params, data=data, verify=self.ssl_verify)
+        resp.raise_for_status()
+        return resp.json()
+
+    def delete_acl_profiles(self, uuids: List[str]) -> Dict[str, Any]:
+        """Delete one or more ACL profiles by UUID."""
+        params = self._get_params(
+            api="SYNO.Core.AppPortal.AccessControl",
+            method="delete",
+            version="1",
+        )
+        data = {"uuids": json.dumps(uuids)}
+        resp = self.session.post(self.api_url, params=params, data=data, verify=self.ssl_verify)
+        resp.raise_for_status()
+        return resp.json()
+
     def build_rule(self, **kwargs):
         """Build a rule dictionary from keyword arguments."""
         # Ensure customize_headers is always a list, not None
@@ -180,7 +245,7 @@ class SynoReverseProxyManager:
                 "port": kwargs.get("frontend_port", 443),
                 "protocol": kwargs.get("frontend_protocol", 1),
                 "https": {"hsts": kwargs.get("frontend_hsts", False)},
-                "acl": kwargs.get("acl")  # Always include acl, even if None
+                **({"acl": kwargs["acl"]} if kwargs.get("acl") is not None else {}),
             },
             "proxy_connect_timeout": kwargs.get("proxy_connect_timeout", 60),
             "proxy_read_timeout": kwargs.get("proxy_read_timeout", 60),

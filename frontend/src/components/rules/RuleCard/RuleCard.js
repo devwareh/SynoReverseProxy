@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { FiEdit2, FiTrash2, FiCopy, FiShield } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiCopy, FiShield, FiLock } from "react-icons/fi";
 import Checkbox from "../../common/Checkbox/Checkbox";
 import Badge from "../../common/Badge/Badge";
 import Button from "../../common/Button/Button";
@@ -106,6 +106,11 @@ const RuleCard = ({
             {rule.frontend?.https?.hsts && (
               <Badge variant="hsts" size="small" icon={<FiShield />}>
                 HSTS
+              </Badge>
+            )}
+            {rule.frontend?.acl && (
+              <Badge variant="warning" size="small" icon={<FiLock />} title="Access Control List active">
+                ACL
               </Badge>
             )}
             {operationState?.status && (
@@ -220,6 +225,7 @@ RuleCard.propTypes = {
       protocol: PropTypes.number,
       port: PropTypes.number,
       fqdn: PropTypes.string,
+      acl: PropTypes.string,
       https: PropTypes.shape({
         hsts: PropTypes.bool,
       }),

@@ -1,12 +1,13 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import config first to ensure .env is loaded
 from app.core import config  # noqa: F401
 from app.core.version import APP_VERSION, VERSION_INFO
 
-from app.api.routes import rules, import_export, auth
+from app.api.routes import rules, import_export, auth, acl
+from app.api.dependencies import get_current_user
 
 app = FastAPI(
     title="Synology Reverse Proxy Manager API",
@@ -60,6 +61,7 @@ app.add_middleware(
 # Include routers
 # Note: import_export routes must come before rules routes to match /rules/export before /rules/{rule_id}
 app.include_router(auth.router)  # Auth routes first
+app.include_router(acl.router)
 app.include_router(import_export.router)
 app.include_router(rules.router)
 
@@ -81,7 +83,7 @@ def get_version():
 
 # Backward compatibility endpoint
 @app.post("/create")
-def create_rule_legacy(rule):
+def create_rule_legacy(rule, _: str = Depends(get_current_user)):
     """Legacy endpoint for creating rules. Use POST /rules instead."""
     from app.api.routes.rules import create_rule
     from app.api.dependencies import get_mgr
