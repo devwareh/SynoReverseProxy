@@ -111,6 +111,7 @@ except (PermissionError, OSError) as e:
     warnings.warn(f"Could not create data/logs directories: {e}. They may already exist or be mounted.")
 
 # File paths
-SESSION_FILE = str(DATA_DIR / "syno_session.json.enc")
-KEY_FILE = str(DATA_DIR / "syno_key.key")
+# Allow optional overrides so test environments can use isolated session/key files
+SESSION_FILE = os.getenv("SYNO_SESSION_FILE") or str(DATA_DIR / "syno_session.json.enc")
+KEY_FILE = os.getenv("SYNO_KEY_FILE") or str(DATA_DIR / "syno_key.key")
 
