@@ -1,5 +1,6 @@
 import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
+import App from "./App";
 
 const mockRetryOperation = jest.fn();
 const mockClearCompletedOperations = jest.fn();
@@ -7,6 +8,12 @@ const mockClearCompletedOperations = jest.fn();
 jest.mock("./utils/api", () => ({
   authAPI: {
     firstLogin: jest.fn(),
+  },
+  aclAPI: {
+    getAll: jest.fn().mockResolvedValue({ data: { data: { entries: [] } } }),
+    create: jest.fn().mockResolvedValue({ data: { success: true } }),
+    update: jest.fn().mockResolvedValue({ data: { success: true } }),
+    delete: jest.fn().mockResolvedValue({ data: { success: true } }),
   },
 }));
 
@@ -73,8 +80,6 @@ jest.mock("./hooks/useNotifications", () => () => ({
   showNotification: jest.fn(),
   removeNotification: jest.fn(),
 }));
-
-import App from "./App";
 
 describe("App async operation integration", () => {
   beforeEach(() => {

@@ -71,13 +71,44 @@ Or in Portainer, add `FRONTEND_PORT` and `BACKEND_PORT` to the environment varia
 
 ### Optional Variables
 
-| Variable                       | Description                     | Default           |
-| ------------------------------ | ------------------------------- | ----------------- |
-| `SYNOLOGY_OTP_CODE`            | 2FA OTP code (first login only) | -                 |
-| `SYNOLOGY_DEVICE_NAME`         | Device identifier               | Hostname          |
-| `SYNOLOGY_SESSION_EXPIRY_SECS` | Session expiry in seconds       | `518400` (6 days) |
-| `FRONTEND_PORT`                | Frontend web server port        | `8889`            |
-| `BACKEND_PORT`                 | Backend API server port         | `18888`           |
+<!-- AUTO-GENERATED from config/.env.example -->
+**Synology NAS**
+
+| Variable | Description | Default |
+| -------- | ----------- | ------- |
+| `SYNOLOGY_OTP_CODE` | 2FA OTP code (first login only; prefer `/auth/first-login` endpoint) | - |
+| `SYNOLOGY_DEVICE_NAME` | Trusted device identifier | Hostname |
+| `SYNOLOGY_SESSION_EXPIRY_SECS` | NAS session lifetime in seconds | `518400` (6 days) |
+| `SYNOLOGY_SSL_VERIFY` | Verify NAS SSL certificate | `false` |
+
+**Web UI Authentication**
+
+| Variable | Description | Default |
+| -------- | ----------- | ------- |
+| `APP_USERNAME` | Pre-set web UI username (skips setup wizard) | - |
+| `APP_PASSWORD` | Pre-set web UI password (skips setup wizard) | - |
+| `APP_SESSION_SECRET_KEY` | Fernet key for encrypting web sessions | auto-generated |
+| `APP_SESSION_EXPIRY_SECS` | Web session lifetime in seconds | `3600` (1 hour) |
+| `APP_REMEMBER_ME_EXPIRY_SECS` | "Remember me" session lifetime in seconds | `2592000` (30 days) |
+
+**Security**
+
+| Variable | Description | Default |
+| -------- | ----------- | ------- |
+| `APP_USE_HTTPS` | Enable Secure flag on session cookies (requires HTTPS) | `false` |
+| `APP_RATE_LIMIT_ENABLED` | Enable login rate limiting | `true` |
+| `APP_RATE_LIMIT_MAX_ATTEMPTS` | Max failed login attempts before lockout | `5` |
+| `APP_RATE_LIMIT_WINDOW` | Rate-limit window in seconds | `300` (5 min) |
+
+**Ports & Docker**
+
+| Variable | Description | Default |
+| -------- | ----------- | ------- |
+| `FRONTEND_PORT` | Frontend web server port | `8889` |
+| `BACKEND_PORT` | Backend API server port | `18888` |
+| `PUID` | Host user ID for file ownership inside the container | - |
+| `PGID` | Host group ID for file ownership inside the container | - |
+<!-- END AUTO-GENERATED -->
 
 **Note on OTP**: The `SYNOLOGY_OTP_CODE` environment variable is optional and only needed if you want to perform first login during container startup. For a better experience, especially with 2FA codes that expire quickly, use the `/auth/first-login` API endpoint instead (see [First Login Setup](#first-login-setup) below).
 

@@ -15,7 +15,7 @@ A web application for managing reverse proxy rules on Synology NAS. Designed for
 - Full CRUD operations on proxy rules
 - Import/Export rules as JSON
 - Search and filter rules
-
+- Access Control Profiles — restrict rules to specific IPs/subnets via ACL
 - Responsive design for mobile and desktop
 
 ## Why use SynoReverseProxy?
@@ -263,16 +263,44 @@ After setup, you can log in with your admin credentials.
 
 ### Optional Environment Variables
 
+<!-- AUTO-GENERATED from config/.env.example -->
+**Synology NAS**
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `APP_USERNAME` | - | Pre-set web UI username (skips setup) |
-| `APP_PASSWORD` | - | Pre-set web UI password (skips setup) |
-| `SYNOLOGY_OTP_CODE` | - | OTP code for first login (not recommended) |
-| `SYNOLOGY_SSL_VERIFY` | `false` | Verify SSL certificates (set to `true` if your NAS has a trusted/Let's Encrypt cert) |
+| `SYNOLOGY_OTP_CODE` | - | OTP code for first login (prefer `/auth/first-login` endpoint instead) |
+| `SYNOLOGY_DEVICE_NAME` | Hostname | Trusted device identifier saved after first login |
+| `SYNOLOGY_SESSION_EXPIRY_SECS` | `518400` | NAS session lifetime in seconds (6 days) |
+| `SYNOLOGY_SSL_VERIFY` | `false` | Verify NAS SSL certificate — set `true` if using a trusted/Let's Encrypt cert |
+
+**Web UI Authentication**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `APP_USERNAME` | - | Pre-set web UI username (skips first-run wizard) |
+| `APP_PASSWORD` | - | Pre-set web UI password (skips first-run wizard) |
+| `APP_SESSION_SECRET_KEY` | auto-generated | Fernet key for encrypting web sessions |
+| `APP_SESSION_EXPIRY_SECS` | `3600` | Web session lifetime in seconds (1 hour) |
+| `APP_REMEMBER_ME_EXPIRY_SECS` | `2592000` | "Remember me" session lifetime in seconds (30 days) |
+
+**Security**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `APP_USE_HTTPS` | `false` | Set `true` to enable Secure flag on session cookies (requires HTTPS) |
+| `APP_RATE_LIMIT_ENABLED` | `true` | Enable login rate limiting |
+| `APP_RATE_LIMIT_MAX_ATTEMPTS` | `5` | Max failed login attempts before lockout |
+| `APP_RATE_LIMIT_WINDOW` | `300` | Rate-limit window in seconds (5 minutes) |
+
+**Ports & Docker**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
 | `BACKEND_PORT` | `18888` | Backend API port |
 | `FRONTEND_PORT` | `8889` | Frontend web UI port |
-| `PUID` | - | User ID for file ownership (optional) |
-| `PGID` | - | Group ID for file ownership (optional) |
+| `PUID` | - | Host user ID for file ownership inside the container |
+| `PGID` | - | Host group ID for file ownership inside the container |
+<!-- END AUTO-GENERATED -->
 
 ### Port Configuration
 

@@ -1,13 +1,13 @@
 // Refactored App.js using modern component architecture
 import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback, lazy, Suspense, useRef } from "react";
-import { FiPlus, FiX, FiSearch, FiShield, FiGlobe, FiDownload, FiUpload, FiTrash2, FiArrowUp, FiArrowDown, FiLayers, FiCheckCircle, FiLogOut, FiLock } from "react-icons/fi";
+import { FiPlus, FiX, FiSearch, FiGlobe, FiDownload, FiUpload, FiTrash2, FiArrowUp, FiArrowDown, FiLayers, FiCheckCircle, FiLogOut, FiLock } from "react-icons/fi";
 import useRules from "./hooks/useRules";
 import useNotifications from "./hooks/useNotifications";
 import { useAuth } from "./contexts/AuthContext";
 import { authAPI } from "./utils/api";
 import { DEFAULT_RULE_FIELDS } from "./utils/constants";
 import { Header, Container, Toolbar, Footer } from "./components/layout";
-import { Button, Input, SkipLink, Select } from "./components/common";
+import { Button, SkipLink, Select } from "./components/common";
 import { RuleGrid } from "./components/rules";
 import { ToastContainer } from "./components/notifications";
 import { OperationsPanel } from "./components/operations";
@@ -16,6 +16,8 @@ import Notification from "./components/notifications/Notification/Notification";
 import Login from "./components/auth/Login/Login";
 import Setup from "./components/auth/Setup/Setup";
 import ChangePassword from "./components/auth/ChangePassword/ChangePassword";
+import FirstLoginModal from "./components/auth/FirstLoginModal/FirstLoginModal";
+import useAclManager from "./hooks/useAclManager";
 import useKeyboardShortcuts from "./hooks/useKeyboardShortcuts";
 import "./App.css";
 
@@ -23,6 +25,7 @@ import "./App.css";
 const RuleForm = lazy(() => import("./components/forms/RuleForm/RuleForm"));
 const Modal = lazy(() => import("./components/modals/Modal/Modal"));
 const ConfirmDialog = lazy(() => import("./components/modals/ConfirmDialog/ConfirmDialog"));
+const AclManager = lazy(() => import("./components/acl/AclManager/AclManager"));
 
 function App() {
   // Authentication
@@ -67,6 +70,7 @@ function App() {
   const [firstLoginLoading, setFirstLoginLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const { showAclManager, aclVersion, openAclManager, closeAclManager } = useAclManager();
 
   // Prevents duplicate probe calls while one is already in-flight
   const authProbeInProgress = useRef(false);
@@ -368,9 +372,6 @@ function App() {
         if (failed > 0) messageParts.push(`${failed} failed`);
         const message = `Import completed: ${messageParts.join(", ")} out of ${total} rules.`;
         showNotification(message, failed > 0 ? "error" : "success");
-        if (result.data.skipped_rules) {
-          console.log("Skipped rules:", result.data.skipped_rules);
-        }
       }
     } catch (err) {
       showNotification(`Failed to import rules: ${err.message}`, "error");
@@ -529,47 +530,15 @@ function App() {
           {/* First Login Modal */}
           {showFirstLogin && (
             <Suspense fallback={<LoadingState message="Loading..." />}>
-              <Modal
+              <FirstLoginModal
                 isOpen={showFirstLogin}
-                onClose={() => { setShowFirstLogin(false); setOtpCode(""); setIsReauth(false); }}
-                title={
-                  <>
-                    <FiShield /> {isReauth ? "Re-authenticate with NAS" : "2FA Authentication Required"}
-                  </>
-                }
-                footer={
-                  <>
-                    <Button variant="secondary" onClick={() => { setShowFirstLogin(false); setOtpCode(""); setIsReauth(false); }} disabled={firstLoginLoading}>
-                      Cancel
-                    </Button>
-                    <Button variant="primary" onClick={handleFirstLogin} loading={firstLoginLoading} disabled={firstLoginLoading || otpCode.trim().length === 0}>
-                      {isReauth ? "Re-authenticate" : "Authenticate"}
-                    </Button>
-                  </>
-                }
-              >
-                <p>{isReauth
-                  ? "Your NAS session has expired. Please enter the current OTP code from your authenticator app to reconnect."
-                  : "Your Synology account has two-factor authentication enabled. Please enter the current OTP code from your authenticator app to complete setup."
-                }</p>
-                <Input
-                  label="OTP Code"
-                  id="otp-code"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]{6}"
-                  required
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  placeholder="Enter 6-digit OTP code"
-                  maxLength={6}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter" && !firstLoginLoading && otpCode.trim().length > 0) {
-                      handleFirstLogin();
-                    }
-                  }}
-                />
-              </Modal>
+                isReauth={isReauth}
+                otpCode={otpCode}
+                onOtpChange={setOtpCode}
+                loading={firstLoginLoading}
+                onCancel={() => { setShowFirstLogin(false); setOtpCode(""); setIsReauth(false); }}
+                onSubmit={handleFirstLogin}
+              />
             </Suspense>
           )}
 
@@ -650,10 +619,20 @@ function App() {
                 onChange={setFields}
                 onSubmit={handleSubmit}
                 onCancel={resetForm}
+                onOpenAclManager={openAclManager}
+                aclVersion={aclVersion}
                 editingRule={editingRule}
                 loading={loading}
                 error={rulesError}
               />
+            </Suspense>
+          )}
+
+          {showAclManager && (
+            <Suspense fallback={<LoadingState message="Loading ACL manager..." />}>
+              <Modal isOpen={showAclManager} onClose={closeAclManager} title="">
+                <AclManager onClose={closeAclManager} />
+              </Modal>
             </Suspense>
           )}
 

@@ -89,6 +89,39 @@ export const rulesAPI = {
   },
 };
 
+/**
+ * API methods for Access Control Lists (ACL).
+ */
+export const aclAPI = {
+  /**
+   * Fetch all ACL profiles.
+   * @returns {Promise<import('axios').AxiosResponse>}
+   */
+  getAll: () => api.get('/acl'),
+
+  /**
+   * Create a new ACL profile.
+   * @param {Object} data - The ACL profile data.
+   * @returns {Promise<import('axios').AxiosResponse>}
+   */
+  create: (data) => api.post('/acl', data),
+
+  /**
+   * Update an existing ACL profile.
+   * @param {string} uuid - The unique identifier of the ACL profile.
+   * @param {Object} data - The updated ACL profile data.
+   * @returns {Promise<import('axios').AxiosResponse>}
+   */
+  update: (uuid, data) => api.put(`/acl/${uuid}`, data),
+
+  /**
+   * Delete an ACL profile.
+   * @param {string} uuid - The unique identifier of the ACL profile.
+   * @returns {Promise<import('axios').AxiosResponse>}
+   */
+  delete: (uuid) => api.delete(`/acl/${uuid}`),
+};
+
 export const authAPI = {
   checkSetup: () => api.get('/auth/setup/check'),
   completeSetup: (data) => api.post('/auth/setup/complete', data),

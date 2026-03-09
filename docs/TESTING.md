@@ -159,6 +159,26 @@ curl -X POST http://localhost:18888/auth/first-login \
 3. **Access frontend**: http://localhost:8889 (or custom port if `FRONTEND_PORT` is set)
 4. **Expected**: Rules load immediately, no modal appears
 
+### Scenario 6: Run backend tests without clobbering your NAS session
+
+By default, both the running backend and the test suite share the same Synology
+session file at `data/syno_session.json.enc`. If you run tests against the same
+`data/` directory that your dev instance uses, this will force a NAS
+re-authentication the next time you open the UI.
+
+To keep test runs isolated, point pytest at a separate session file, for example:
+
+```bash
+SYNOLOGY_NAS_URL=http://localhost:5000 \
+SYNOLOGY_USERNAME=test \
+SYNOLOGY_PASSWORD=test \
+SYNO_SESSION_FILE=data/test/syno_session.json.enc \
+conda run -n synoenv bash -lc 'pytest tests/ -v'
+```
+
+This uses a test-only `data/test/syno_session.json.enc` and avoids touching the
+session used by your normal dev or Docker environment.
+
 ## Viewing Logs
 
 ```bash

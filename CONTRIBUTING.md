@@ -36,10 +36,14 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 4. Write or update tests as needed
 5. Ensure all tests pass:
    ```bash
-   # Backend tests
-   pytest tests/ -v
-   
-   # Frontend build
+   # Backend tests (env vars required even for unit tests)
+   SYNOLOGY_NAS_URL=http://localhost:5000 SYNOLOGY_USERNAME=test SYNOLOGY_PASSWORD=test \
+     pytest tests/ -v
+
+   # Frontend tests
+   cd frontend && npm test -- --watchAll=false
+
+   # Frontend build check
    cd frontend && npm run build
    ```
 6. Commit with a descriptive message:
@@ -82,15 +86,23 @@ npm start
 
 ### Running Tests
 
+Backend tests require three env vars (values can be fake for unit tests that mock the NAS):
+
 ```bash
-# Backend tests
-pytest tests/ -v
+# All backend tests
+SYNOLOGY_NAS_URL=http://localhost:5000 SYNOLOGY_USERNAME=test SYNOLOGY_PASSWORD=test \
+  pytest tests/ -v
 
-# With coverage
-pytest tests/ -v --cov=backend/app
+# With coverage report
+SYNOLOGY_NAS_URL=http://localhost:5000 SYNOLOGY_USERNAME=test SYNOLOGY_PASSWORD=test \
+  pytest tests/ -v --cov=backend/app --cov-report=term-missing
 
-# Security tests only
-pytest tests/test_*security*.py -v
+# Single test file
+SYNOLOGY_NAS_URL=http://localhost:5000 SYNOLOGY_USERNAME=test SYNOLOGY_PASSWORD=test \
+  pytest tests/test_acl.py -v
+
+# Frontend tests
+cd frontend && npm test -- --watchAll=false
 ```
 
 ## Coding Standards

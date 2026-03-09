@@ -159,3 +159,56 @@
   }
 }
 
+
+/* Phantom label spacer — aligns checkboxes with adjacent labelled inputs in the grid */
+.form-label-spacer {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  line-height: 1;
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ACL selector */
+.acl-select-group {
+  grid-column: 1 / -1;
+}
+
+.acl-fetch-warning {
+  grid-column: 1 / -1;
+  padding: 8px 12px;
+  background: var(--btn-delete-hover-bg, rgba(239, 68, 68, 0.08));
+  color: var(--error-text, #f87171);
+  border: 1px solid var(--error-border, rgba(239, 68, 68, 0.3));
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.acl-manage-row {
+  grid-column: 1 / -1;
+  display: flex;
+  margin-top: -10px;
+}
+
+.acl-manage-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--accent-primary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  transition: opacity 0.15s;
+}
+
+.acl-manage-link:hover {
+  opacity: 0.75;
+}

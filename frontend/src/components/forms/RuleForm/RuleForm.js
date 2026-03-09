@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { FiSettings, FiGlobe, FiServer, FiClock, FiCode, FiCheck, FiX, FiTrash2 } from "react-icons/fi";
+import { FiSettings, FiGlobe, FiServer, FiClock, FiCode, FiCheck, FiX, FiTrash2, FiLock } from "react-icons/fi";
 import { Input, Select, Checkbox as CheckboxComponent, Button } from "../../common";
 import { PROTOCOL_OPTIONS, HTTP_VERSION_OPTIONS, HEADER_PRESETS } from "../../../utils/constants";
+import { aclAPI } from "../../../utils/api";
+import { toErrorString } from "../../../utils/errors";
 import "./RuleForm.css";
 
 const RuleForm = ({
@@ -10,11 +12,32 @@ const RuleForm = ({
   onChange,
   onSubmit,
   onCancel,
+  onOpenAclManager,
+  aclVersion = 0,
   editingRule = null,
   loading = false,
   error = null,
 }) => {
   const [showJsonView, setShowJsonView] = useState(false);
+  const [aclProfiles, setAclProfiles] = useState([]);
+  const [aclLoading, setAclLoading] = useState(true);
+  const [aclFetchError, setAclFetchError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAclLoading(true);
+    setAclFetchError(null);
+    aclAPI.getAll()
+      .then((res) => { if (!cancelled) setAclProfiles(res.data?.data?.entries || []); })
+      .catch((err) => {
+        if (!cancelled) {
+          setAclProfiles([]);
+          setAclFetchError(toErrorString(err, "Failed to load ACL profiles"));
+        }
+      })
+      .finally(() => { if (!cancelled) setAclLoading(false); });
+    return () => { cancelled = true; };
+  }, [aclVersion]);
   const [customHeadersText, setCustomHeadersText] = useState(JSON.stringify(fields.customize_headers || [], null, 2));
 
   const handleChange = (e) => {
@@ -150,6 +173,7 @@ const RuleForm = ({
               options={PROTOCOL_OPTIONS}
             />
             <div className="form-group">
+              <span className="form-label form-label-spacer" aria-hidden="true">&nbsp;</span>
               <CheckboxComponent
                 name="frontend_hsts"
                 checked={fields.frontend_hsts}
@@ -157,6 +181,35 @@ const RuleForm = ({
                 label="Enable HSTS (HTTP Strict Transport Security)"
               />
             </div>
+            <Select
+              label="Access Control Profile"
+              name="acl"
+              value={fields.acl || ""}
+              onChange={(e) => onChange({ ...fields, acl: e.target.value || null })}
+              disabled={aclLoading}
+              options={
+                aclLoading
+                  ? [{ value: "", label: "Loading profiles…" }]
+                  : [
+                      { value: "", label: "None (unrestricted)" },
+                      ...aclProfiles.map((p) => ({ value: p.UUID, label: p.name })),
+                    ]
+              }
+              className="acl-select-group"
+              helpText={fields.acl ? "Access restricted — only allowed IPs can reach this rule." : undefined}
+            />
+            {aclFetchError && (
+              <div className="acl-fetch-warning" role="alert">
+                Could not load ACL profiles: {aclFetchError}
+              </div>
+            )}
+            {onOpenAclManager && (
+              <div className="acl-manage-row">
+                <button type="button" className="acl-manage-link" onClick={onOpenAclManager}>
+                  <FiLock aria-hidden="true" /> Manage ACL Profiles
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -202,6 +255,7 @@ const RuleForm = ({
           </h3>
           <div className="form-grid">
             <div className="form-group">
+              <span className="form-label form-label-spacer" aria-hidden="true">&nbsp;</span>
               <CheckboxComponent
                 name="proxy_intercept_errors"
                 checked={fields.proxy_intercept_errors}
@@ -359,6 +413,8 @@ RuleForm.propTypes = {
   onChange: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
+  onOpenAclManager: PropTypes.func,
+  aclVersion: PropTypes.number,
   editingRule: PropTypes.object,
   loading: PropTypes.bool,
   error: PropTypes.string,
