@@ -194,7 +194,7 @@ class SynoReverseProxyManager:
         try:
             all_profiles = self.list_acl_profiles()
         except Exception as e:
-            logger.error("Failed to fetch ACL profiles during update (uuid=%s): %s", uuid, e)
+            logger.error("Failed to fetch ACL profiles during update: %s", e)
             raise RuntimeError("Cannot update ACL profile: failed to fetch existing profiles") from None
         entries = all_profiles.get("data", {}).get("entries", [])
         existing = next((e for e in entries if e.get("UUID") == uuid), None)

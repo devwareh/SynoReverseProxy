@@ -65,7 +65,10 @@ def update_acl_profile(
         result = mgr.update_acl_profile(uuid, profile.name, rules)
         if not result.get("success"):
             error_code = result.get("error", {}).get("code")
-            logger.warning("NAS rejected ACL profile update (uuid=%s): %s", uuid, result)
+            logger.warning(
+                "NAS rejected ACL profile update: error_code=%s",
+                error_code,
+            )
             status = 404 if error_code == 404 else 400
             detail = "ACL profile not found" if status == 404 else "Failed to update ACL profile"
             raise HTTPException(status_code=status, detail=detail)
@@ -93,11 +96,15 @@ def delete_acl_profile(
     try:
         result = mgr.delete_acl_profiles([uuid])
         if not result.get("success"):
-            logger.warning("NAS rejected ACL profile delete (uuid=%s): %s", uuid, result)
+            error_code = result.get("error", {}).get("code")
+            logger.warning(
+                "NAS rejected ACL profile delete: error_code=%s",
+                error_code,
+            )
             raise HTTPException(status_code=400, detail="Failed to delete ACL profile")
         return result
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to delete ACL profile (uuid=%s): %s", uuid, e, exc_info=True)
+        logger.error("Failed to delete ACL profile: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to delete ACL profile")

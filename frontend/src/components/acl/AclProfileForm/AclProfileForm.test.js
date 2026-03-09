@@ -5,7 +5,6 @@ import AclProfileForm from "./AclProfileForm";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-const noop = () => {};
 
 function renderForm({
   editingProfile = "new",
