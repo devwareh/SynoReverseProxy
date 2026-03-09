@@ -95,7 +95,7 @@ read -p "Do you want to push commits and tags now? (y/n) " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Pushing to remote..."
-    git push && git push --tags
+    git push origin main && git push origin "$GIT_TAG"
     echo ""
     echo "🚀 Version $NEW_VERSION released!"
     echo "Check GitHub Actions for build status: https://github.com/devwareh/SynoReverseProxy/actions"
@@ -103,5 +103,6 @@ else
     echo ""
     echo "Skipped push."
     echo "To push manually, run:"
-    echo "  git push && git push --tags"
+    echo "  git push origin main"
+    echo "  git push origin \"$GIT_TAG\""
 fi
