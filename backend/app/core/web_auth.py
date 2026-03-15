@@ -22,6 +22,8 @@ WEB_SESSIONS_FILE = DATA_DIR / "web_sessions.json.enc"
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
+    if not password or not password.strip():
+        raise ValueError("Password cannot be empty or blank")
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
@@ -72,15 +74,19 @@ def save_web_auth(username: str, password_hash: str):
 
 def initialize_web_auth(username: str, password: str, force_update: bool = False) -> bool:
     """Initialize web auth credentials if they don't exist.
-    
+
     This ensures credentials are always available, even on first run.
     If credentials already exist, they are not overwritten unless force_update=True.
-    
+
     Args:
         username: Username for authentication
         password: Password to hash and store
         force_update: If True, update existing credentials (use with caution)
     """
+    if not username or not username.strip():
+        raise ValueError("Username cannot be empty or blank")
+    if not password or not password.strip():
+        raise ValueError("Password cannot be empty or blank")
     auth_data = load_web_auth()
     
     if not auth_data or not auth_data.get('password_hash') or force_update:

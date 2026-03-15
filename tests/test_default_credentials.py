@@ -6,6 +6,11 @@ and that the application warns or prevents use of default passwords.
 import pytest
 from unittest.mock import patch, MagicMock
 import os
+import sys
+from pathlib import Path
+
+# Ensure the backend package is importable when running from repo root
+sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
 
 
 class TestDefaultCredentials:
@@ -211,3 +216,71 @@ class TestCredentialSecurity:
                 "Session secret should not be hardcoded. "
                 "Generate using secrets.token_urlsafe(32)."
             )
+
+
+class TestBlankCredentialValidation:
+    """Tests for Issue #15: blank APP credentials must be rejected.
+
+    Setting APP_PASSWORD="" (or APP_USERNAME="") should NOT silently bypass
+    authentication or hash an empty password. Each entry point must validate
+    that the credential is a non-empty, non-whitespace string.
+    """
+
+    def test_hash_password_rejects_empty_string(self):
+        """hash_password("") must raise ValueError — not silently produce a hash."""
+        from app.core.web_auth import hash_password
+        with pytest.raises(ValueError, match=r"(?i)empty|blank|password"):
+            hash_password("")
+
+    def test_hash_password_rejects_whitespace_only(self):
+        """hash_password with only spaces/tabs must raise ValueError."""
+        from app.core.web_auth import hash_password
+        with pytest.raises(ValueError, match=r"(?i)empty|blank|password"):
+            hash_password("   ")
+
+    def test_initialize_web_auth_rejects_empty_password(self, tmp_path, monkeypatch):
+        """initialize_web_auth must reject an empty-string password."""
+        import app.core.web_auth as web_auth
+        monkeypatch.setattr(web_auth, "WEB_AUTH_FILE", tmp_path / ".web_auth.json")
+        with pytest.raises(ValueError, match=r"(?i)password"):
+            web_auth.initialize_web_auth("admin", "")
+
+    def test_initialize_web_auth_rejects_whitespace_password(self, tmp_path, monkeypatch):
+        """initialize_web_auth must reject a whitespace-only password."""
+        import app.core.web_auth as web_auth
+        monkeypatch.setattr(web_auth, "WEB_AUTH_FILE", tmp_path / ".web_auth.json")
+        with pytest.raises(ValueError, match=r"(?i)password"):
+            web_auth.initialize_web_auth("admin", "   ")
+
+    def test_initialize_web_auth_rejects_empty_username(self, tmp_path, monkeypatch):
+        """initialize_web_auth must reject an empty-string username."""
+        import app.core.web_auth as web_auth
+        monkeypatch.setattr(web_auth, "WEB_AUTH_FILE", tmp_path / ".web_auth.json")
+        with pytest.raises(ValueError, match=r"(?i)username"):
+            web_auth.initialize_web_auth("", "validpassword123")
+
+    def test_config_strips_blank_app_password_env_var(self, monkeypatch, tmp_path):
+        """APP_PASSWORD='' must NOT trigger initialize_web_auth.
+
+        The guard in config.py should treat an explicitly-blank APP_PASSWORD
+        identically to a missing one: skip silent auth init so first-run setup
+        is required.
+        """
+        monkeypatch.setenv("APP_PASSWORD", "")
+        monkeypatch.setenv("APP_USERNAME", "admin")
+        monkeypatch.setenv("SYNOLOGY_USERNAME", "nas_user")
+        monkeypatch.setenv("SYNOLOGY_PASSWORD", "nas_pass")
+        monkeypatch.setenv("SYNOLOGY_NAS_URL", "http://192.168.1.1:5000")
+
+        with patch("app.core.web_auth.initialize_web_auth") as mock_init:
+            import importlib
+            import app.core.config as config_module
+            # Force re-instantiation so fresh env vars are picked up
+            config_module._settings = None
+            config_module.Settings()
+            # initialize_web_auth must NOT be called with a blank password
+            for call_args in mock_init.call_args_list:
+                _, pwd = call_args[0][0], call_args[0][1]
+                assert pwd.strip() != "", (
+                    "initialize_web_auth must not be called with a blank password"
+                )
